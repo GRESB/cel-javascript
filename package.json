@@ -1,0 +1,26 @@
+{
+  "name": "typescript-cel",
+  "version": "0.1.0",
+  "description": "A CEL interpreter using Antlr4 and TypeScript",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest",
+    "fetch-cel-spec": "ts-node scripts/fetchCelSpec.ts",
+    "run-conformance-tests": "ts-node scripts/runConformanceTests.ts",
+    "conformance": "npm run fetch-cel-spec && npm run run-conformance-tests"
+  },
+  "author": "Your Name",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "antlr4ts": "^0.5.0-alpha.4"
+  },
+  "devDependencies": {
+    "@types/jest": "^27.0.3",
+    "jest": "^27.2.5",
+    "typescript": "^4.4.4",
+    "vitest": "^0.0.111",
+    "ts-node": "^10.2.1"
+  }
+}
