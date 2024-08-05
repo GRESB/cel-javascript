@@ -11,7 +11,7 @@
     "run-conformance-tests": "ts-node scripts/runConformanceTests.ts",
     "conformance": "npm run fetch-cel-spec && npm run run-conformance-tests"
   },
-  "author": "Your Name",
+  "author": "yottanami",
   "license": "Apache-2.0",
   "dependencies": {
     "antlr4ts": "^0.5.0-alpha.4"
