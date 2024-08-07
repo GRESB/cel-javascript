@@ -41,3 +41,4 @@ test/*.js
 *.map
 
 *~
+.idea

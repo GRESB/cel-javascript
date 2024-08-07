@@ -1,37 +1,25 @@
-import { CharStreams, CommonTokenStream } from 'antlr4ts';
+import { ANTLRInputStream, CommonTokenStream } from 'antlr4ts';
 import { CELLexer } from './generated/CELLexer';
 import { CELParser } from './generated/CELParser';
 import { CELInterpreter } from './CELInterpreter';
+import { CELVisitor } from './CELVisitor';
 import { ParseTree } from 'antlr4ts/tree/ParseTree';
 
-export class Environment {
-
-  compile(source: string): ParseTree {
-    const input = CharStreams.fromString(source);
-    const lexer = new CELLexer(input);
-    const tokens = new CommonTokenStream(lexer);
-    const parser = new CELParser(tokens);
-    return parser.start();
-  }
-
-  program(ast: ParseTree): Program {
-    return new Program(ast);
-  }
-}
-
-export class Program {
+export class CELRuntime {
   private ast: ParseTree;
 
-  constructor(ast: ParseTree) {
-    this.ast = ast;
+  constructor(celExpression: string) {
+    const inputStream = new ANTLRInputStream(celExpression);
+    const lexer = new CELLexer(inputStream);
+    const tokenStream = new CommonTokenStream(lexer);
+    const parser = new CELParser(tokenStream);
+
+    // Assuming 'start' is the entry point of the grammar
+    this.ast = parser.start();
   }
 
-  evaluate(activation: Record<string, any>): any {
-    const interpreter = new CELInterpreter(activation);
+  evaluate(activation: any) {
+    const interpreter = new CELInterpreter();
     return interpreter.visit(this.ast);
   }
-}
-
-export function jsonToCel(jsonObj: any): any {
-  return jsonObj;
 }

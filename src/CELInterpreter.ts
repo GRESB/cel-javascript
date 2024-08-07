@@ -1,177 +1,307 @@
 import { AbstractParseTreeVisitor } from 'antlr4ts/tree/AbstractParseTreeVisitor';
 import { CELVisitor } from './generated/CELVisitor';
 import {
-  StartContext,
-  ExprContext,
-  ConditionalOrContext,
-  ConditionalAndContext,
-  RelationContext,
-  CalcContext,
-  UnaryContext,
-  MemberContext,
-  PrimaryContext,
-  LiteralContext
+  StartContext, ExprContext, ConditionalOrContext, ConditionalAndContext, RelationContext, CalcContext, UnaryContext, MemberContext, PrimaryContext, ExprListContext, FieldInitializerListContext, MapInitializerListContext, IntContext, UintContext, DoubleContext, StringContext, BytesContext, BoolTrueContext, BoolFalseContext, NullContext, RelationOpContext, RelationCalcContext, CalcUnaryContext, CalcMulDivContext, CalcAddSubContext, MemberExprContext, LogicalNotContext, NegateContext, SelectOrCallContext, IndexContext, CreateMessageContext, IdentOrGlobalCallContext, NestedContext, CreateListContext, CreateStructContext, ConstantLiteralContext
 } from './generated/CELParser';
 
-interface CelValue {
-  int64_value?: number;
-  uint64_value?: number;
-  double_value?: number;
-  string_value?: string;
-  bytes_value?: string;
-  bool_value?: boolean;
-  null_value?: null;
-  list_value?: { values?: CelValue[] };
-  map_value?: { entries?: { key: CelValue, value: CelValue }[] };
-}
+type CelValue = any;
+type CelObject = { [key: string]: CelValue };
 
-export class CELInterpreter extends AbstractParseTreeVisitor<CelValue> implements CELVisitor<CelValue> {
-  private activation: Record<string, any>;
+class CELInterpreter extends AbstractParseTreeVisitor<any> implements CELVisitor<any> {
+  private globalFunctions: { [key: string]: Function } = {};
+  private variables: { [key: string]: any } = {};
 
-  constructor(activation: Record<string, any>) {
-    super();
-    this.activation = activation;
+  protected defaultResult() {
+    return null;
   }
 
-  protected defaultResult(): CelValue {
-    return {};
-  }
-
-  visitStart(ctx: StartContext): CelValue {
+  visitStart(ctx: StartContext) {
     return this.visit(ctx.expr());
   }
 
   visitExpr(ctx: ExprContext): CelValue {
-    if (ctx.conditionalOr()) {
-      return this.visit(ctx.conditionalOr());
+    if (ctx.QUESTIONMARK()) {
+      const condition = this.visit(ctx.conditionalOr(0));
+      const trueBranch = this.visit(ctx.conditionalOr(1));
+      const falseBranch = this.visit(ctx.expr()!);
+      return condition ? trueBranch : falseBranch;
     }
-    if (ctx.op) {
-      const cond = this.visit(ctx.e);
-      if (cond.bool_value) {
-        return this.visit(ctx.e1);
-      } else {
-        return this.visit(ctx.e2);
-      }
-    }
-    return {};
+    return this.visit(ctx.conditionalOr(0));
   }
 
   visitConditionalOr(ctx: ConditionalOrContext): CelValue {
-    let result = this.visit(ctx.e);
-    for (let i = 0; i < ctx.ops.length; i++) {
-      if (ctx.ops[i].text === '||') {
-        result = { bool_value: result.bool_value || this.visit(ctx.e1[i]).bool_value };
-      }
+    console.log('visitConditionalOr', ctx.constructor.name, ctx.text)
+    let result = this.visit(ctx.conditionalAnd(0));
+    for (let i = 1; i < ctx.conditionalAnd().length; i++) {
+      result = result || this.visit(ctx.conditionalAnd(i));
     }
     return result;
   }
 
   visitConditionalAnd(ctx: ConditionalAndContext): CelValue {
-    let result = this.visit(ctx.e);
-    for (let i = 0; i < ctx.ops.length; i++) {
-      if (ctx.ops[i].text === '&&') {
-        result = { bool_value: result.bool_value && this.visit(ctx.e1[i]).bool_value };
-      }
+    console.log('visitConditionalAnd', ctx.constructor.name, ctx.text);
+
+    let result: CelValue;
+    if (ctx.relation().length > 0) {
+      const firstRelation = ctx.relation(0);
+      console.log('First relation context:', firstRelation.constructor.name);
+      result = this.visit(firstRelation);
+    }
+
+    for (let i = 1; i < ctx.relation().length; i++) {
+      console.log('Visit relation in loop:', ctx.relation(i).constructor.name);
+      result = result && this.visit(ctx.relation(i));
     }
     return result;
   }
 
   visitRelation(ctx: RelationContext): CelValue {
-    if (ctx.calc()) {
-      return this.visit(ctx.calc());
+    console.log('visitRelation', ctx.constructor.name, ctx.text);
+    if (ctx instanceof RelationCalcContext) {
+      return this.visitRelationCalc(ctx);
+    } else if (ctx instanceof RelationOpContext) {
+      return this.visitRelationOp(ctx);
+    } else {
+      return this.visit(ctx);
     }
+  }
+
+
+  visitRelationOp(ctx: RelationOpContext): CelValue {
     const left = this.visit(ctx.relation(0));
     const right = this.visit(ctx.relation(1));
-    const op = ctx.op.text;
-    switch (op) {
-      case '<': return { bool_value: left.int64_value! < right.int64_value! };
-      case '<=': return { bool_value: left.int64_value! <= right.int64_value! };
-      case '>': return { bool_value: left.int64_value! > right.int64_value! };
-      case '>=': return { bool_value: left.int64_value! >= right.int64_value! };
-      case '==': return { bool_value: left.int64_value === right.int64_value };
-      case '!=': return { bool_value: left.int64_value !== right.int64_value };
-      case 'in': return { bool_value: right.list_value?.values?.some(v => v.int64_value === left.int64_value) || false };
-      default: return {};
+    const operator = ctx._op.text;
+
+    switch (operator) {
+      case "==":
+        return left === right;
+      case "!=":
+        return left !== right;
+      case "<":
+        return left < right;
+      case "<=":
+        return left <= right;
+      case ">":
+        return left > right;
+      case ">=":
+        return left >= right;
+      case "in":
+        return right.includes(left);
+      default:
+        throw new Error(`Unknown operator: ${operator}`);
     }
   }
 
   visitCalc(ctx: CalcContext): CelValue {
-    if (ctx.unary()) {
+    console.log('visitCalc', ctx.constructor.name, ctx.text);
+    if (ctx instanceof CalcUnaryContext) {
       return this.visit(ctx.unary());
+    } else if (ctx instanceof CalcMulDivContext) {
+      const left = this.visit(ctx.calc(0));
+      const right = this.visit(ctx.calc(1));
+      const operator = ctx._op?.text;
+
+      switch (operator) {
+        case "*":
+          return left * right;
+        case "/":
+          return left / right;
+        case "%":
+          return left % right;
+        default:
+          throw new Error(`Unknown operator: ${operator}`);
+      }
+    } else if (ctx instanceof CalcAddSubContext) {
+      let result = this.visit(ctx.calc(0));
+      const operator = ctx._op.text;
+
+      for (let i = 1; i < ctx.calc().length; i++) {
+        const right = this.visit(ctx.calc(i));
+
+        switch (operator) {
+          case "+":
+            result += right;
+            break;
+          case "-":
+            result -= right;
+            break;
+          default:
+            throw new Error(`Unknown operator: ${operator}`);
+        }
+      }
+      return result;
     }
-    const left = this.visit(ctx.calc(0));
-    const right = this.visit(ctx.calc(1));
-    const op = ctx.op.text;
-    switch (op) {
-      case '+': return { int64_value: left.int64_value! + right.int64_value! };
-      case '-': return { int64_value: left.int64_value! - right.int64_value! };
-      case '*': return { int64_value: left.int64_value! * right.int64_value! };
-      //case '/': return { int64_value: left.int64_value! / right.int64_value! };
-      case '%': return { int64_value: left.int64_value! % right.int64_value! };
-      default: return {};
-    }
+    return null;
+  }
+
+
+
+
+
+  visitRelationCalc(ctx: RelationCalcContext): CelValue {
+    console.log('visitRelationCalc', ctx.constructor.name, ctx.text)
+    console.log('ctx.calc.constructor.name', ctx.constructor.name)
+    return this.visitCalc(ctx.calc());
+
   }
 
   visitUnary(ctx: UnaryContext): CelValue {
-    if (ctx.member()) {
+    console.log('visitUnary', ctx.constructor.name, ctx.text)
+    if (ctx instanceof MemberExprContext) {
       return this.visit(ctx.member());
+    } else if (ctx instanceof LogicalNotContext) {
+      let result = this.visit(ctx.member());
+      for (let i = 0; i < ctx._ops.length; i++) {
+        result = !result;
+      }
+      return result;
+    } else if (ctx instanceof NegateContext) {
+      let result = this.visit(ctx.member());
+      for (let i = 0; i < ctx._ops.length; i++) {
+        result = -result;
+      }
+      return result;
     }
-    const op = ctx.ops[0].text;
-    const value = this.visit(ctx.member());
-    if (op === '!') {
-      return { bool_value: !value.bool_value };
-    } else if (op === '-') {
-      return { int64_value: -value.int64_value! };
-    }
-    return {};
   }
 
   visitMember(ctx: MemberContext): CelValue {
-    if (ctx.primary()) {
-      return this.visit(ctx.primary());
+    console.log('visitMember', ctx.constructor.name, ctx.text);
+    if (ctx instanceof PrimaryContext) {
+      return this.visit(ctx);
+    } else if (ctx instanceof SelectOrCallContext) {
+      const target = this.visit(ctx.member());
+      const memberName = ctx._id.text;
+
+      if (ctx.LPAREN()) {
+        const args = ctx.exprList() ? this.visit(ctx.exprList()!) : [];
+        // @ts-ignore
+        if (typeof target === 'object' && target !== null && typeof target[memberName] === "function") {
+          // @ts-ignore
+          return target[memberName](...args);
+        } else {
+          throw new Error(`'${memberName}' is not a function`);
+        }
+      } else {
+        // @ts-ignore
+        return target?.[memberName];
+      }
+    } else if (ctx instanceof IndexContext) {
+      const target = this.visit(ctx.member());
+      const index = this.visit(ctx.expr()!);
+      return target[index];
+    } else if (ctx instanceof CreateMessageContext) {
+      const obj: CelObject = {};
+      const fields = ctx.fieldInitializerList()!.expr();
+
+      for (let i = 0; i < fields.length; i++) {
+        const field = fields[i];
+        const key = ctx.fieldInitializerList()!.IDENTIFIER(i).text;
+        obj[key] = this.visit(field);
+      }
+
+      return obj;
     }
-    if (ctx.id) {
-      const obj = this.visit(ctx.member());
-      return obj.map_value?.entries?.find(entry => entry.key.string_value === ctx.id.text)?.value || {};
-    }
-    return {};
   }
 
   visitPrimary(ctx: PrimaryContext): CelValue {
-    if (ctx.literal()) {
+    console.log('visitPrimary', ctx.constructor.name, ctx.text)
+    if (ctx instanceof IdentOrGlobalCallContext) {
+      const identifier = ctx._id.text;
+      if (ctx.LPAREN()) {
+        const args = ctx.exprList() ? this.visit(ctx.exprList()!) : [];
+        // @ts-ignore
+        if (typeof this.globalFunctions[identifier] === "function") {
+          // @ts-ignore
+          return this.globalFunctions[identifier](...args);
+        } else {
+          throw new Error(`Function '${identifier}' is not defined`);
+        }
+      } else {
+        // @ts-ignore
+        return this.variables[identifier];
+      }
+    } else if (ctx instanceof NestedContext) {
+      return this.visit(ctx.expr());
+    } else if (ctx instanceof CreateListContext) {
+      return ctx.exprList() ? this.visit(ctx.exprList()!) : [];
+    } else if (ctx instanceof CreateStructContext) {
+      const obj: CelObject = {};
+      if (ctx.mapInitializerList()) {
+        const entries = ctx.mapInitializerList()!.expr();
+        for (let i = 0; i < entries.length; i++) {
+          const key = this.visit(entries[i]);
+          const value = this.visit(ctx.mapInitializerList()!.expr(i + 1));
+          obj[key] = value;
+        }
+      }
+      return obj;
+    } else if (ctx instanceof ConstantLiteralContext) {
       return this.visit(ctx.literal());
     }
-    if (ctx.e) {
-      return this.visit(ctx.e);
-    }
-    return {};
   }
 
-  visitLiteral(ctx: LiteralContext): CelValue {
-    if (ctx.NUM_INT()) {
-      return { int64_value: parseInt(ctx.text, 10) };
+  visitExprList(ctx: ExprListContext): CelValue[] {
+    console.log('visitExprList', ctx.constructor.name, ctx.text);
+    return ctx.expr().map(expr => this.visit(expr));
+  }
+
+  visitFieldInitializerList(ctx: FieldInitializerListContext): CelObject {
+    console.log('visitFieldInitializerList', ctx.constructor.name, ctx.text)
+    const fields: CelObject = {};
+    for (let i = 0; i < ctx.IDENTIFIER().length; i++) {
+      const field = ctx.IDENTIFIER(i).text;
+      const value = this.visit(ctx.expr(i));
+      fields[field] = value;
     }
-    if (ctx.NUM_FLOAT()) {
-      return { double_value: parseFloat(ctx.text) };
+    return fields;
+  }
+
+  visitMapInitializerList(ctx: MapInitializerListContext): CelObject {
+    console.log('visitMapInitializerList', ctx.constructor.name, ctx.text)
+    const map: CelObject = {};
+    for (let i = 0; i < ctx.expr().length; i++) {
+      const key = this.visit(ctx.expr(i));
+      const value = this.visit(ctx.expr(i + 1));
+      map[key] = value;
     }
-    if (ctx.STRING()) {
-      return { string_value: ctx.text.slice(1, -1) }; // Remove quotes
-    }
-    if (ctx.CEL_TRUE()) {
-      return { bool_value: true };
-    }
-    if (ctx.CEL_FALSE()) {
-      return { bool_value: false };
-    }
-    if (ctx.NUL()) {
-      return { null_value: null };
-    }
-    if (ctx.RAW_STRING()) {
-      return { string_value: ctx.text.slice(2, -1) }; // Remove r and quotes
-    }
-    if (ctx.BYTES()) {
-      return { bytes_value: ctx.text.slice(2, -1) }; // Remove b and quotes
-    }
-    return {};
+    return map;
+  }
+
+  visitInt(ctx: IntContext): CelValue {
+    console.log('visitInt', ctx.constructor.name, ctx.text)
+    const sign = ctx.MINUS() ? -1 : 1;
+    return sign * parseInt(ctx.NUM_INT().text, 10);
+  }
+
+  visitUint(ctx: UintContext): CelValue {
+    console.log('visitUint', ctx.constructor.name, ctx.text)
+    return parseInt(ctx.NUM_UINT().text, 10);
+  }
+
+  visitDouble(ctx: DoubleContext): CelValue {
+    const sign = ctx.MINUS() ? -1 : 1;
+    return sign * parseFloat(ctx.NUM_FLOAT().text);
+  }
+
+  visitString(ctx: StringContext): CelValue {
+    return ctx.STRING().text.slice(1, -1); // Remove the quotes
+  }
+
+  visitBytes(ctx: BytesContext): CelValue {
+    return Array.from(Buffer.from(ctx.BYTES().text.slice(1, -1), 'hex')); // Convert hex string to buffer representation
+  }
+
+  visitBoolTrue(ctx: BoolTrueContext): CelValue {
+    return true;
+  }
+
+  visitBoolFalse(ctx: BoolFalseContext): CelValue {
+    return false;
+  }
+
+  visitNull(ctx: NullContext): CelValue {
+    return null;
   }
 }
+
+export { CELInterpreter };

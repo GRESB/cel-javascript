@@ -18,22 +18,25 @@
 
         perSystem = { config, self', inputs', pkgs, system, ... }:
           let
-
+            
             typescript = pkgs.nodePackages.typescript;
 
             antlr4 = pkgs.antlr4;
+            
 
           in
           {
             devShells.default = pkgs.mkShell {
               nativeBuildInputs = [
-                antlr4         
+                antlr4
                 typescript
                 pkgs.nodejs
+                pkgs.tree
               ];
 
               shellHook = ''
                 export PATH=$PATH:${typescript}/bin
+                export PATH=$PATH:$(pwd)/node_modules/.bin 
               '';
             };
 
