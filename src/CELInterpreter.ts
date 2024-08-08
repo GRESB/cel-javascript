@@ -135,9 +135,6 @@ class CELInterpreter extends AbstractParseTreeVisitor<any> implements CELVisitor
   }
 
 
-
-
-
   visitRelationCalc(ctx: RelationCalcContext): CelValue {
     console.log('visitRelationCalc', ctx.constructor.name, ctx.text)
     console.log('ctx.calc.constructor.name', ctx.constructor.name)

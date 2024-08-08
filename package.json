@@ -1,7 +1,7 @@
 {
-  "name": "typescript-cel",
-  "version": "0.1.0",
-  "description": "A CEL interpreter using Antlr4 and TypeScript",
+  "name": "celjs",
+  "version": "0.0.2",
+  "description": "Parser and evaluator for Google's Common Expression Language (CEL) in JavaScript using ANTLR4",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "scripts": {
