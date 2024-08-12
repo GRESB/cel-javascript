@@ -1,5 +1,7 @@
 # CELJS
 
+## This project is not ready for production yet.
+
 Parser and evaluator for CEL in JavaScript using ANTLR4
 This library provides parser and evaluator for Common Expression Language (CEL) expressions in Javascript and Typescript projects. CEL is a language developed by Google that allows for safe and fast evaluation of expressions in a wide variety of applications, such as policy engines, rule engines, and more.
 

@@ -48,13 +48,16 @@ import {ParseTree} from "antlr4ts/tree/ParseTree";
 
 class CELInterpreter extends AbstractParseTreeVisitor<any> implements CELVisitor<any> {
   private context: CELContext;
-    private globalFunctions: { [key: string]: Function } = {}; // Add this line
 
 
-  constructor(context: CELContext) {
+  constructor(context: CELContext | null = null) {
     super();
     this.context = context;
   }
+
+  setContext(context: CELContext) {
+    this.context = context;
+  }    
 
   protected defaultResult() {
     return null;
@@ -289,6 +292,18 @@ class CELInterpreter extends AbstractParseTreeVisitor<any> implements CELVisitor
         throw new Error(`Function '${identifier}' is not defined`);
       }
     } else {
+
+if (this.context === undefined || this.context === null) {
+    throw new Error(",,,,,,,,,,,,,Context is not defined");
+}
+	
+
+if (typeof this.context.getVariable !== 'function') {
+    console.error("=======Context object:", this.context);
+    throw new Error("Invalid context: 'getVariable' method not found");
+}
+
+	
       // It's an identifier
       const variableValue = this.context.getVariable(identifier);
       if (variableValue === undefined) {
@@ -313,7 +328,6 @@ class CELInterpreter extends AbstractParseTreeVisitor<any> implements CELVisitor
           throw new Error(`Function '${identifier}' is not defined`);
         }
       } else {
-        // Retrieve variable from context
         const variableValue = this.context.getVariable(identifier);
         if (variableValue === undefined) {
           throw new Error(`Variable '${identifier}' is not defined`);
@@ -407,20 +421,23 @@ class CELInterpreter extends AbstractParseTreeVisitor<any> implements CELVisitor
     console.log('visitNull:', ctx.text);
     return null;
   }
-
-  // Example method to evaluate expressions
-  evaluate(input: string): any {
-    const lexer = new CELLexer(new ANTLRInputStream(input));
-    const tokens = new CommonTokenStream(lexer);
-    const parser = new CELParser(tokens);
-    const tree = parser.start();
-    return this.visit(tree);
-  }
+    
+  // evaluate(input: string): any {
+  //   const lexer = new CELLexer(new ANTLRInputStream(input));
+  //   console.log('+++++++++++++++++++++++++++++++++++Lexer:', lexer); 
+  //     const tokens = new CommonTokenStream(lexer);
+  //     console.log('Tokens:', tokens);
+  //     const parser = new CELParser(tokens);
+  //     console.log('Parser:', parser);
+  //     const tree = parser.start();
+  //     console.log('Tree:', tree);
+  //   return this.visit(tree);
+  // }
 
 
   public visit(tree: ParseTree): any {
-    //console.log('Visiting context:', tree.constructor.name);
-    return super.visit(tree);
+      const result = super.visit(tree);
+      return result;
   }
 }
 
