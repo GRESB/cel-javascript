@@ -1,14 +1,15 @@
 import { ANTLRInputStream, CommonTokenStream } from 'antlr4ts';
 import { CELLexer } from './generated/CELLexer';
 import { CELParser } from './generated/CELParser';
-import { CELInterpreter } from './CELInterpreter';
-import { CELVisitor } from './CELVisitor';
+import { Evaluator } from './Evaluator';
+import { Visitor } from './Visitor';
 import { ParseTree } from 'antlr4ts/tree/ParseTree';
 import { ConsoleErrorListener } from 'antlr4ts/ConsoleErrorListener';
 import { ErrorListener, RecognitionException, Recognizer } from 'antlr4ts';
-import { CELContext } from './CELContext';
+import { ParserErrorListener } from './ParserErrorListener';
+import { Context } from './Context';
 
-class CELRuntime {
+class Runtime {
   private ast: ParseTree | null = null;
 
   constructor(celExpression: string) {
@@ -18,7 +19,7 @@ class CELRuntime {
     const parser = new CELParser(tokenStream);
 
     parser.removeErrorListeners();
-    parser.addErrorListener(new CELParserErrorListener());
+    parser.addErrorListener(new ParserErrorListener());
 
     try {
       this.ast = parser.start();
@@ -30,7 +31,7 @@ class CELRuntime {
 
   static canParse(celExpression: string): boolean {
     try {
-      const runtime = new CELRuntime(celExpression);
+      const runtime = new Runtime(celExpression);
       return runtime.ast !== null;
     } catch (error) {
       return false;
@@ -39,7 +40,7 @@ class CELRuntime {
 
   static parseString(celExpression: string): { success: boolean; error?: string } {
     try {
-      const runtime = new CELRuntime(celExpression);
+      const runtime = new Runtime(celExpression);
       if (runtime.ast !== null) {
         return { success: true };
       } else {
@@ -54,24 +55,10 @@ class CELRuntime {
     if (!this.ast) {
       throw new Error("AST is not available. Parsing might have failed.");
     }
-    context = new CELContext(context);
-    const interpreter = new CELInterpreter(context);
-    return interpreter.visit(this.ast);
+    context = new Context(context);
+    const evaluator = new Evaluator(context);
+    return evaluator.visit(this.ast);
   }
 }
 
-// Custom error listener to capture errors during parsing
-class CELParserErrorListener implements ErrorListener<any> {
-  syntaxError<T extends any>(
-    recognizer: Recognizer<T, any>,
-    offendingSymbol: T,
-    line: number,
-    charPositionInLine: number,
-    msg: string,
-    e: RecognitionException | undefined
-  ): void {
-    throw new Error(`line ${line}:${charPositionInLine} ${msg}`);
-  }
-}
-
-export { CELRuntime };
+export { Runtime };

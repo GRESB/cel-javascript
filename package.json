@@ -6,11 +6,7 @@
   "types": "lib/index.d.ts",
   "scripts": {
     "build": "tsc",
-    "test": "vitest",
-    "int": "ts-node src/test.ts",
-    "fetch-cel-spec": "ts-node scripts/fetchCelSpec.ts",
-    "run-conformance-tests": "ts-node scripts/runConformanceTests.ts",
-    "conformance": "npm run fetch-cel-spec && npm run run-conformance-tests"
+    "test": "vitest"
   },
   "author": "yottanami",
   "license": "Apache-2.0",

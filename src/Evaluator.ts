@@ -1,6 +1,6 @@
 import { AbstractParseTreeVisitor } from 'antlr4ts/tree/AbstractParseTreeVisitor';
-import { CELVisitor } from './generated/CELVisitor';
-import { CELContext } from './CELContext';
+import { Visitor } from './generated/Visitor';
+import { Context } from './Context';
 import { CelValue } from './CelValue';
 import {
   StartContext,
@@ -46,16 +46,16 @@ import { ANTLRInputStream, CommonTokenStream } from "antlr4ts";
 import { CelObject } from "./CelValue";
 import {ParseTree} from "antlr4ts/tree/ParseTree";
 
-class CELInterpreter extends AbstractParseTreeVisitor<any> implements CELVisitor<any> {
-  private context: CELContext;
+class Evaluator extends AbstractParseTreeVisitor<any> implements Visitor<any> {
+  private context: Context;
 
 
-  constructor(context: CELContext | null = null) {
+  constructor(context: Context | null = null) {
     super();
     this.context = context;
   }
 
-  setContext(context: CELContext) {
+  setContext(context: Context) {
     this.context = context;
   }    
 
@@ -64,12 +64,10 @@ class CELInterpreter extends AbstractParseTreeVisitor<any> implements CELVisitor
   }
 
   visitStart(ctx: StartContext) {
-    console.log('visitStart:', ctx.text);
     return this.visit(ctx.expr());
   }
 
   visitExpr(ctx: ExprContext): CelValue {
-    console.log('visitExpr:', ctx.text);
     if (ctx.QUESTIONMARK()) {
       const condition = this.visit(ctx.conditionalOr(0));
       const trueBranch = this.visit(ctx.conditionalOr(1));
@@ -80,7 +78,6 @@ class CELInterpreter extends AbstractParseTreeVisitor<any> implements CELVisitor
   }
 
   visitConditionalOr(ctx: ConditionalOrContext): CelValue {
-    console.log('visitConditionalOr:', ctx.text);
     let result = this.visit(ctx.conditionalAnd(0));
     for (let i = 1; i < ctx.conditionalAnd().length; i++) {
       result = result || this.visit(ctx.conditionalAnd(i));
@@ -89,7 +86,6 @@ class CELInterpreter extends AbstractParseTreeVisitor<any> implements CELVisitor
   }
 
   visitConditionalAnd(ctx: ConditionalAndContext): CelValue {
-    console.log('visitConditionalAnd:', ctx.text);
     let result: CelValue;
     if (ctx.relation().length > 0) {
       const firstRelation = ctx.relation(0);
@@ -104,7 +100,6 @@ class CELInterpreter extends AbstractParseTreeVisitor<any> implements CELVisitor
   }
 
   visitRelation(ctx: RelationContext): CelValue {
-    console.log('visitRelation:', ctx.text);
     if (ctx instanceof RelationCalcContext) {
       return this.visitRelationCalc(ctx);
     } else if (ctx instanceof RelationOpContext) {
@@ -115,7 +110,6 @@ class CELInterpreter extends AbstractParseTreeVisitor<any> implements CELVisitor
   }
 
   visitRelationOp(ctx: RelationOpContext): CelValue {
-    console.log('visitRelationOp:', ctx.text);
     const left = this.visit(ctx.relation(0));
     const right = this.visit(ctx.relation(1));
     const operator = ctx._op.text;
@@ -141,7 +135,6 @@ class CELInterpreter extends AbstractParseTreeVisitor<any> implements CELVisitor
   }
 
   visitCalc(ctx: CalcContext): CelValue {
-    console.log('visitCalc:', ctx.constructor.name, ctx.text);
     if (ctx instanceof CalcUnaryContext) {
       return this.visitCalcUnary(ctx);
     } else if (ctx instanceof CalcMulDivContext) {
@@ -153,12 +146,9 @@ class CELInterpreter extends AbstractParseTreeVisitor<any> implements CELVisitor
   }
 
   visitCalcMulDiv(ctx: CalcMulDivContext): CelValue {
-    console.log('visitCalcMulDiv:', ctx.text);
     const left = this.visit(ctx.calc(0));
     const right = this.visit(ctx.calc(1));
     const operator = ctx._op?.text;
-
-    console.log(`MulDiv operation: ${left} ${operator} ${right}`);
 
     switch (operator) {
       case "*":
@@ -173,17 +163,13 @@ class CELInterpreter extends AbstractParseTreeVisitor<any> implements CELVisitor
   }
 
   visitCalcAddSub(ctx: CalcAddSubContext): CelValue {
-    console.log('visitCalcAddSub:', ctx.text);
-
     let result = this.visit(ctx.calc(0));
-    console.log('Initial result:', result);
 
     const operatorToken = ctx._op;
     const operator = operatorToken?.text;
 
     for (let i = 1; i < ctx.calc().length; i++) {
       const right = this.visit(ctx.calc(i));
-      console.log(`Operation: ${result} ${operator} ${right}`);
 
       switch (operator) {
         case "+":
@@ -200,19 +186,16 @@ class CELInterpreter extends AbstractParseTreeVisitor<any> implements CELVisitor
   }
 
   visitRelationCalc(ctx: RelationCalcContext): CelValue {
-    console.log('visitRelationCalc:', ctx.text);
     return this.visit(ctx.calc());
   }
 
 
   visitCalcUnary(ctx: CalcUnaryContext): CelValue {
-    console.log('visitCalcUnary:', ctx.text);
     return this.visit(ctx.unary());
   }
 
   // @ts-ignore
   visitUnary(ctx: UnaryContext): CelValue {
-    console.log('visitUnary:', ctx.text);
     if (ctx instanceof MemberExprContext) {
       return this.visit(ctx.member());
     } else if (ctx instanceof LogicalNotContext) {
@@ -235,7 +218,6 @@ class CELInterpreter extends AbstractParseTreeVisitor<any> implements CELVisitor
   }
   // @ts-ignore
   visitMember(ctx: MemberContext): CelValue {
-    console.log('visitMember:', ctx.text);
     if (ctx instanceof PrimaryContext) {
       return this.visit(ctx);
     } else if (ctx instanceof SelectOrCallContext) {
@@ -278,7 +260,6 @@ class CELInterpreter extends AbstractParseTreeVisitor<any> implements CELVisitor
   }
 
   visitIdentOrGlobalCall(ctx: IdentOrGlobalCallContext): CelValue {
-    console.log('visitIdentOrGlobalCall:', ctx.text);
     const identifier = ctx._id.text;
 
     if (ctx.LPAREN()) {
@@ -291,19 +272,7 @@ class CELInterpreter extends AbstractParseTreeVisitor<any> implements CELVisitor
       } else {
         throw new Error(`Function '${identifier}' is not defined`);
       }
-    } else {
-
-if (this.context === undefined || this.context === null) {
-    throw new Error(",,,,,,,,,,,,,Context is not defined");
-}
-	
-
-if (typeof this.context.getVariable !== 'function') {
-    console.error("=======Context object:", this.context);
-    throw new Error("Invalid context: 'getVariable' method not found");
-}
-
-	
+    } else {	
       // It's an identifier
       const variableValue = this.context.getVariable(identifier);
       if (variableValue === undefined) {
@@ -315,7 +284,6 @@ if (typeof this.context.getVariable !== 'function') {
 
   // @ts-ignore
   visitPrimary(ctx: PrimaryContext): CelValue {
-    console.log('visitPrimary:', ctx.text);
     if (ctx instanceof IdentOrGlobalCallContext) {
       const identifier = ctx._id.text;
       if (ctx.LPAREN()) {
@@ -355,12 +323,10 @@ if (typeof this.context.getVariable !== 'function') {
   }
 
   visitExprList(ctx: ExprListContext): CelValue[] {
-    console.log('visitExprList:', ctx.text);
     return ctx.expr().map(expr => this.visit(expr));
   }
 
   visitFieldInitializerList(ctx: FieldInitializerListContext): CelObject {
-    console.log('visitFieldInitializerList:', ctx.text);
     const fields: CelObject = {};
     for (let i = 0; i < ctx.IDENTIFIER().length; i++) {
       const field = ctx.IDENTIFIER(i).text;
@@ -371,7 +337,6 @@ if (typeof this.context.getVariable !== 'function') {
   }
 
   visitMapInitializerList(ctx: MapInitializerListContext): CelObject {
-    console.log('visitMapInitializerList:', ctx.text);
     const map: CelObject = {};
     for (let i = 0; i < ctx.expr().length; i++) {
       const key = this.visit(ctx.expr(i));
@@ -382,13 +347,11 @@ if (typeof this.context.getVariable !== 'function') {
   }
 
   visitInt(ctx: IntContext): CelValue {
-    console.log('visitInt:', ctx.text);
     const sign = ctx.MINUS() ? -1 : 1;
     return sign * parseInt(ctx.NUM_INT().text, 10);
   }
 
   visitUint(ctx: UintContext): CelValue {
-    console.log('visitUint:', ctx.text);
     return parseInt(ctx.NUM_UINT().text, 10);
   }
 
@@ -398,48 +361,31 @@ if (typeof this.context.getVariable !== 'function') {
   }
 
   visitString(ctx: StringContext): CelValue {
-    console.log('visitString:', ctx.text);
     return ctx.STRING().text.slice(1, -1); // Remove the quotes
   }
 
   visitBytes(ctx: BytesContext): CelValue {
-    console.log('visitBytes:', ctx.text);
     return Array.from(Buffer.from(ctx.BYTES().text.slice(1, -1), 'hex')); // Convert hex string to buffer representation
   }
 
   visitBoolTrue(ctx: BoolTrueContext): CelValue {
-    console.log('visitBoolTrue:', ctx.text);
     return true;
   }
 
   visitBoolFalse(ctx: BoolFalseContext): CelValue {
-    console.log('visitBoolFalse:', ctx.text);
     return false;
   }
 
   visitNull(ctx: NullContext): CelValue {
-    console.log('visitNull:', ctx.text);
     return null;
   }
-    
-  // evaluate(input: string): any {
-  //   const lexer = new CELLexer(new ANTLRInputStream(input));
-  //   console.log('+++++++++++++++++++++++++++++++++++Lexer:', lexer); 
-  //     const tokens = new CommonTokenStream(lexer);
-  //     console.log('Tokens:', tokens);
-  //     const parser = new CELParser(tokens);
-  //     console.log('Parser:', parser);
-  //     const tree = parser.start();
-  //     console.log('Tree:', tree);
-  //   return this.visit(tree);
-  // }
 
-
+  // This will be helpful for debugging
   public visit(tree: ParseTree): any {
       const result = super.visit(tree);
       return result;
   }
 }
 
-export { CELInterpreter };
+export { Evaluator };
 

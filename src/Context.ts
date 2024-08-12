@@ -1,6 +1,6 @@
 import {CelValue} from "./CelValue";
 
-export class CELContext {
+export class Context {
   variables: { [key: string]: any };
 
   constructor(variables: { [key: string]: any }) {

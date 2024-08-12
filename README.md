@@ -10,6 +10,9 @@ This library provides parser and evaluator for Common Expression Language (CEL) 
 - Parse and evaluate CEL expressions directly within TypeScript projects.
 - Support for common arithmetic operations, logical operations, and comparisons.
 - Extensible design for adding custom functions and variables.
+- Error handling during parsing with custom error listeners.
+- Context-based evaluation to support dynamic expression evaluation.
+
 
 ## Installation
 
@@ -23,24 +26,56 @@ npm install celjs
 ### Basic Example
 Here is a simple example of how to use the CEL Interpreter:
 
-```typescript
-import { CELInterpreter } from 'cel-interpreter-ts';
+```
+import { Runtime } from 'celjs';
 
-// Create an instance of the interpreter
-const interpreter = new CELInterpreter();
+// Define a CEL expression to evaluate
+const celExpression = '1 + 2 * 3';
 
-// Define some global functions and variables if needed
-interpreter.globalFunctions['myFunction'] = (arg: any) => {
-    return arg * 2;
-};
-interpreter.variables['myVar'] = 10;
+// Check if the expression can be parsed
+if (Runtime.canParse(celExpression)) {
+    // Create an instance of Runtime with the CEL expression
+    const runtime = new Runtime(celExpression);
 
-// Define an expression to evaluate
-const expression = '1 + 2 * 3';
+    // Evaluate the expression within a given context
+    const context = "{}"; // Replace with your actual context if needed
+    const result = runtime.evaluate(context);
 
-// Evaluate the expression
-const result = interpreter.visit(expression);
-
-console.log(`Result of '${expression}':`, result);
+    console.log(`Result of '${celExpression}':`, result);
+} else {
+    console.error('Invalid CEL expression:', celExpression);
+}
 ```
 
+### Parsing Validation
+You can validate if a CEL expression can be parsed without evaluating it:
+
+```
+import { Runtime } from 'celjs';
+
+const celExpression = '1 + 2 * 3';
+const canParse = Runtime.canParse(celExpression);
+
+console.log(`Can parse '${celExpression}':`, canParse);
+
+```
+
+### Error Handling During Parsing
+When parsing a CEL expression, you can catch errors and handle them accordingly:
+
+
+```
+import { Runtime } from 'celjs';
+
+const celExpression = '1 + 2 *'; // Intentional syntax error
+
+const result = Runtime.parseString(celExpression);
+
+if (result.success) {
+    console.log('Expression parsed successfully.');
+} else {
+    console.error('Failed to parse expression:', result.error);
+}
+
+
+```
