@@ -1,4 +1,4 @@
-# CELJS
+# cel-in-js
 
 ## This project is not ready for production yet.
 
@@ -19,7 +19,7 @@ This library provides parser and evaluator for Common Expression Language (CEL) 
 Install the library via npm:
 
 ```bash
-npm install celjs
+npm install cel-in-js
 ```
 
 ## Usage
@@ -27,7 +27,7 @@ npm install celjs
 Here is a simple example of how to use the CEL Interpreter:
 
 ```
-import { Runtime } from 'celjs';
+import { Runtime } from 'cel-in-js';
 
 // Define a CEL expression to evaluate
 const celExpression = '1 + 2 * 3';
@@ -51,7 +51,7 @@ if (Runtime.canParse(celExpression)) {
 You can validate if a CEL expression can be parsed without evaluating it:
 
 ```
-import { Runtime } from 'celjs';
+import { Runtime } from 'cel-in-js';
 
 const celExpression = '1 + 2 * 3';
 const canParse = Runtime.canParse(celExpression);
@@ -65,7 +65,7 @@ When parsing a CEL expression, you can catch errors and handle them accordingly:
 
 
 ```
-import { Runtime } from 'celjs';
+import { Runtime } from 'cel-in-js';
 
 const celExpression = '1 + 2 *'; // Intentional syntax error
 
