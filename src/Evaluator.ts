@@ -49,7 +49,6 @@ import {ParseTree} from "antlr4ts/tree/ParseTree";
 class Evaluator extends AbstractParseTreeVisitor<any> implements Visitor<any> {
   private context: Context;
 
-
   constructor(context: Context | null = null) {
     super();
     this.context = context;
@@ -73,9 +72,13 @@ class Evaluator extends AbstractParseTreeVisitor<any> implements Visitor<any> {
       const trueBranch = this.visit(ctx.conditionalOr(1));
       const falseBranch = this.visit(ctx.expr()!);
       return condition ? trueBranch : falseBranch;
+    } else if (ctx.LPAREN) {  
+      return this.visit(ctx.expr(0)!);
+    } else {
+      return this.visit(ctx.conditionalOr(0));
     }
-    return this.visit(ctx.conditionalOr(0));
   }
+
 
   visitConditionalOr(ctx: ConditionalOrContext): CelValue {
     let result = this.visit(ctx.conditionalAnd(0));
@@ -189,6 +192,17 @@ class Evaluator extends AbstractParseTreeVisitor<any> implements Visitor<any> {
     return this.visit(ctx.calc());
   }
 
+  
+  visitLogicalNot(ctx: LogicalNotContext): CelValue {
+    let result = this.visit(ctx.member());
+    for (let i = 0; i < ctx._ops.length; i++) {
+      result = !result;
+    }
+    return result;
+  }
+
+  
+
 
   visitCalcUnary(ctx: CalcUnaryContext): CelValue {
     return this.visit(ctx.unary());
@@ -216,6 +230,7 @@ class Evaluator extends AbstractParseTreeVisitor<any> implements Visitor<any> {
   visitMemberExpr(ctx: any): CelValue {
     return this.visit(ctx.member());
   }
+  
   // @ts-ignore
   visitMember(ctx: MemberContext): CelValue {
     if (ctx instanceof PrimaryContext) {
@@ -226,17 +241,18 @@ class Evaluator extends AbstractParseTreeVisitor<any> implements Visitor<any> {
 
       if (ctx.LPAREN()) {
         const args = ctx.exprList() ? this.visit(ctx.exprList()!) : [];
-        // @ts-ignore
-        if (typeof target === 'object' && target !== null && typeof target[memberName] === "function") {
+
           // @ts-ignore
-          return target[memberName](...args);
-        } else {
-          throw new Error(`'${memberName}' is not a function`);
-        }
-      } else {
-        // @ts-ignore
-        return target?.[memberName];
-      }
+          if (typeof target === 'object' && target !== null && typeof target[memberName] === "function") {
+            // @ts-ignore
+            return target[memberName](...args);
+          } else {
+            throw new Error(`'${memberName}' is not a function`);
+          }
+         } else {
+           // @ts-ignore
+           return target?.[memberName];
+         }
     } else if (ctx instanceof IndexContext) {
       const target = this.visit(ctx.member());
       const index = this.visit(ctx.expr()!);
@@ -322,6 +338,32 @@ class Evaluator extends AbstractParseTreeVisitor<any> implements Visitor<any> {
     }
   }
 
+  visitConstantLiteral(ctx: ConstantLiteralContext): CelValue {
+    return this.visit(ctx.literal());
+  }
+  
+
+  visitNested(ctx: NestedContext): CelValue {
+    return this.visit(ctx.expr()); 
+  }
+
+  visitLiteralExpr(ctx: LiteralExprContext): CelValue {
+    if (ctx.INT()) {
+      return parseInt(ctx.INT().text, 10);
+    } else if (ctx.FLOAT()) {
+      return parseFloat(ctx.FLOAT().text);
+    } else if (ctx.STRING()) {
+      return ctx.STRING().text.slice(1, -1); // Remove surrounding quotes
+    } else if (ctx.BOOL_TRUE()) {
+      return true;
+    } else if (ctx.BOOL_FALSE()) {
+      return false;
+    } else if (ctx.NULL()) {
+      return null;
+    }
+    throw new Error("Unknown literal type"); // Fallback in case of unexpected literal
+  }
+
   visitExprList(ctx: ExprListContext): CelValue[] {
     return ctx.expr().map(expr => this.visit(expr));
   }
@@ -382,8 +424,9 @@ class Evaluator extends AbstractParseTreeVisitor<any> implements Visitor<any> {
 
   // This will be helpful for debugging
   public visit(tree: ParseTree): any {
-      const result = super.visit(tree);
-      return result;
+    // console.log("Visiting: ", tree.constructor.name);
+    const result = super.visit(tree);
+    return result;
   }
 }
 
