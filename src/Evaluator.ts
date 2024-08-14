@@ -171,15 +171,28 @@ class Evaluator extends AbstractParseTreeVisitor<any> implements Visitor<any> {
     return result;
   }
 
-  visitRelation(ctx: RelationContext): CelValue {
-    if (ctx instanceof RelationCalcContext) {
-      return this.visitRelationCalc(ctx);
-    } else if (ctx instanceof RelationOpContext) {
-      return this.visitRelationOp(ctx);
-    } else {
-      return this.visit(ctx);
+  visitRelationOp(ctx: RelationOpContext): CelValue {
+    const left = this.visit(ctx.relation(0));
+    const right = this.visit(ctx.relation(1));
+
+    switch (ctx._op.text) {
+      case "==": return left === right;
+      case "!=": return left !== right;
+      case "<": return left < right;
+      case "<=": return left <= right;
+      case ">": return left > right;
+      case ">=": return left >= right;
+      case "in": 
+        if (Array.isArray(right)) {
+          return right.includes(left);
+        } else {
+          throw new Error(`Invalid operation: 'in' applied to non-array.`);
+        }
+      default:
+        throw new Error(`Unknown operator: ${ctx._op.text}`);
     }
   }
+
 
   visitRelationOp(ctx: RelationOpContext): CelValue {
     const left = this.visit(ctx.relation(0));
@@ -206,16 +219,48 @@ class Evaluator extends AbstractParseTreeVisitor<any> implements Visitor<any> {
     }
   }
 
-  visitCalc(ctx: CalcContext): CelValue {
-    if (ctx instanceof CalcUnaryContext) {
-      return this.visitCalcUnary(ctx);
-    } else if (ctx instanceof CalcMulDivContext) {
-      return this.visitCalcMulDiv(ctx);
-    } else if (ctx instanceof CalcAddSubContext) {
-      return this.visitCalcAddSub(ctx);
-    }
-    return null;
+  visitCalcUnary(ctx: CalcUnaryContext): CelValue {
+    return this.visit(ctx.unary());
   }
+
+  visitCalcMulDiv(ctx: CalcMulDivContext): CelValue {
+    const left = this.visit(ctx.calc(0));
+    const right = this.visit(ctx.calc(1));
+    const operator = ctx._op?.text;
+
+    switch (operator) {
+      case "*":
+        return left * right;
+      case "/":
+        return left / right;
+      case "%":
+        return left % right;
+      default:
+        throw new Error(`Unknown operator: ${operator}`);
+    }
+  }
+
+  visitCalcAddSub(ctx: CalcAddSubContext): CelValue {
+    let result = this.visit(ctx.calc(0));
+
+    for (let i = 1; i < ctx.calc().length; i++) {
+      const right = this.visit(ctx.calc(i));
+      const operator = ctx._op[i - 1].text;
+
+      switch (operator) {
+        case "+":
+          result += right;
+          break;
+        case "-":
+          result -= right;
+          break;
+        default:
+          throw new Error(`Unknown operator: ${operator}`);
+      }
+    }
+    return result;
+  }
+
 
   visitCalcMulDiv(ctx: CalcMulDivContext): CelValue {
     const left = this.visit(ctx.calc(0));
@@ -277,23 +322,24 @@ class Evaluator extends AbstractParseTreeVisitor<any> implements Visitor<any> {
     return this.visit(ctx.unary());
   }
 
-  // @ts-ignore
-  visitUnary(ctx: UnaryContext): CelValue {
-    if (ctx instanceof MemberExprContext) {
-      return this.visit(ctx.member());
-    } else if (ctx instanceof LogicalNotContext) {
-      let result = this.visit(ctx.member());
-      for (let i = 0; i < ctx._ops.length; i++) {
-        result = !result;
-      }
-      return result;
-    } else if (ctx instanceof NegateContext) {
-      let result = this.visit(ctx.member());
-      for (let i = 0; i < ctx._ops.length; i++) {
-        result = -result;
-      }
-      return result;
+  visitMemberExpr(ctx: MemberExprContext): CelValue {
+    return this.visit(ctx.member());
+  }
+
+  visitLogicalNot(ctx: LogicalNotContext): CelValue {
+    let result = this.visit(ctx.member());
+    for (let i = 0; i < ctx._ops.length; i++) {
+      result = !result;
     }
+    return result;
+  }
+
+  visitNegate(ctx: NegateContext): CelValue {
+    let result = this.visit(ctx.member());
+    for (let i = 0; i < ctx._ops.length; i++) {
+      result = -result;
+    }
+    return result;
   }
 
   visitMemberExpr(ctx: any): CelValue {
