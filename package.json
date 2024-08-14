@@ -1,6 +1,6 @@
 {
   "name": "cel-in-js",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "Parser and evaluator for Google's Common Expression Language (CEL) in JavaScript using ANTLR4",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
