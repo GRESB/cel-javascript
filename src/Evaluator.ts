@@ -157,19 +157,15 @@ class Evaluator extends AbstractParseTreeVisitor<any> implements Visitor<any> {
     return result;
   }
 
+
   visitConditionalAnd(ctx: ConditionalAndContext): CelValue {
-    let result: CelValue;
-    if (ctx.relation().length > 0) {
-      const firstRelation = ctx.relation(0);
-      result = this.visit(firstRelation);
-    }
+    let result = this.visit(ctx.relation(0));
     for (let i = 1; i < ctx.relation().length; i++) {
-      // @ts-ignore
       result = result && this.visit(ctx.relation(i));
     }
-    // @ts-ignore
     return result;
   }
+
 
   visitRelationOp(ctx: RelationOpContext): CelValue {
     const left = this.visit(ctx.relation(0));
@@ -219,16 +215,12 @@ class Evaluator extends AbstractParseTreeVisitor<any> implements Visitor<any> {
     }
   }
 
-  visitCalcUnary(ctx: CalcUnaryContext): CelValue {
-    return this.visit(ctx.unary());
-  }
+
 
   visitCalcMulDiv(ctx: CalcMulDivContext): CelValue {
     const left = this.visit(ctx.calc(0));
     const right = this.visit(ctx.calc(1));
-    const operator = ctx._op?.text;
-
-    switch (operator) {
+    switch (ctx._op?.text) {
       case "*":
         return left * right;
       case "/":
@@ -236,18 +228,16 @@ class Evaluator extends AbstractParseTreeVisitor<any> implements Visitor<any> {
       case "%":
         return left % right;
       default:
-        throw new Error(`Unknown operator: ${operator}`);
+        throw new Error(`Unknown operator: ${ctx._op?.text}`);
     }
   }
 
+
   visitCalcAddSub(ctx: CalcAddSubContext): CelValue {
     let result = this.visit(ctx.calc(0));
-
     for (let i = 1; i < ctx.calc().length; i++) {
       const right = this.visit(ctx.calc(i));
-      const operator = ctx._op[i - 1].text;
-
-      switch (operator) {
+      switch (ctx._op[i - 1].text) {
         case "+":
           result += right;
           break;
@@ -255,12 +245,11 @@ class Evaluator extends AbstractParseTreeVisitor<any> implements Visitor<any> {
           result -= right;
           break;
         default:
-          throw new Error(`Unknown operator: ${operator}`);
+          throw new Error(`Unknown operator: ${ctx._op[i - 1].text}`);
       }
     }
     return result;
   }
-
 
   visitCalcMulDiv(ctx: CalcMulDivContext): CelValue {
     const left = this.visit(ctx.calc(0));
@@ -346,26 +335,21 @@ class Evaluator extends AbstractParseTreeVisitor<any> implements Visitor<any> {
     return this.visit(ctx.member());
   }
   
-  // @ts-ignore
   visitMember(ctx: MemberContext): CelValue {
     if (ctx instanceof PrimaryContext) {
-      return this.visit(ctx);
+      return this.visitPrimary(ctx);
     } else if (ctx instanceof SelectOrCallContext) {
       const target = this.visit(ctx.member());
       const memberName = ctx._id.text;
 
       if (ctx.LPAREN()) {
-        const args = ctx.exprList() ? this.visit(ctx.exprList()!) : [];
-
-        // @ts-ignore
+        const args = ctx.exprList() ? this.visitExprList(ctx.exprList()!) : [];
         if (typeof target === 'object' && target !== null && typeof target[memberName] === "function") {
-          // @ts-ignore
           return target[memberName](...args);
         } else {
           throw new Error(`'${memberName}' is not a function`);
         }
       } else {
-        // @ts-ignore
         return target?.[memberName];
       }
     } else if (ctx instanceof IndexContext) {
@@ -386,6 +370,7 @@ class Evaluator extends AbstractParseTreeVisitor<any> implements Visitor<any> {
     }
   }
 
+
   visitPrimaryExpr(ctx: any): CelValue {
     return this.visit(ctx.primary());
   }
@@ -394,12 +379,9 @@ class Evaluator extends AbstractParseTreeVisitor<any> implements Visitor<any> {
     const identifier = ctx._id.text;
 
     if (ctx.LPAREN()) {
-      // It's a function call
       const args = ctx.exprList() ? this.visitExprList(ctx.exprList()!) : [];
       const func = this.functionRegistry[identifier];
-      
       if (typeof func === 'function') {
-        // Evaluate the function with the arguments
         return func(...args);
       } else {
         throw new Error(`Function '${identifier}' is not defined`);
@@ -413,15 +395,13 @@ class Evaluator extends AbstractParseTreeVisitor<any> implements Visitor<any> {
     }
   }
 
-
-  // @ts-ignore
   visitPrimary(ctx: PrimaryContext): CelValue {
     if (ctx instanceof IdentOrGlobalCallContext) {
       return this.visitIdentOrGlobalCall(ctx);
     } else if (ctx instanceof NestedContext) {
       return this.visit(ctx.expr());
     } else if (ctx instanceof CreateListContext) {
-      return ctx.exprList() ? this.visit(ctx.exprList()!) : [];
+      return ctx.exprList() ? this.visitExprList(ctx.exprList()!) : [];
     } else if (ctx instanceof CreateStructContext) {
       const obj: CelObject = {};
       if (ctx.mapInitializerList()) {
@@ -437,6 +417,7 @@ class Evaluator extends AbstractParseTreeVisitor<any> implements Visitor<any> {
       return this.visit(ctx.literal());
     }
   }
+
 
   visitConstantLiteral(ctx: ConstantLiteralContext): CelValue {
     return this.visit(ctx.literal());
