@@ -46,8 +46,77 @@ import { ANTLRInputStream, CommonTokenStream } from "antlr4ts";
 import { CelObject } from "./CelValue";
 import {ParseTree} from "antlr4ts/tree/ParseTree";
 
+type FunctionImplementation = (...args: any[]) => any;
+
 class Evaluator extends AbstractParseTreeVisitor<any> implements Visitor<any> {
   private context: Context;
+
+  private functionRegistry: { [key: string]: FunctionImplementation } = {
+    // Arithmetic Functions
+    min: Math.min,
+    max: Math.max,
+    abs: Math.abs,
+    ceil: Math.ceil,
+    floor: Math.floor,
+    round: Math.round,
+
+    // String Functions
+    contains: (s: string, substr: string) => s.includes(substr),
+    endsWith: (s: string, suffix: string) => s.endsWith(suffix),
+    indexOf: (s: string, substr: string) => s.indexOf(substr),
+    length: (s: string) => s.length,
+    lower: (s: string) => s.toLowerCase(),
+    upper: (s: string) => s.toUpperCase(),
+    replace: (s: string, substr: string, replacement: string) => s.replace(new RegExp(substr, 'g'), replacement),
+    split: (s: string, separator: string) => s.split(separator),
+    startsWith: (s: string, prefix: string) => s.startsWith(prefix),
+    matches: (s: string, regex: string) => new RegExp(regex).test(s),
+
+    // List Functions
+    size: (list: any[]) => list.length,
+    all: (list: any[], predicate: FunctionImplementation) => list.every(predicate),
+
+    exists: (list: any[], predicate: FunctionImplementation) => list.some(predicate),
+    existsOne: (list: any[], predicate: FunctionImplementation) => list.filter(predicate).length === 1,
+    map: (list: any[], callback: FunctionImplementation) => list.map(callback),
+
+    // Type Conversion Functions
+    int: (x: any) => parseInt(x, 10),
+    uint: (x: any) => Math.max(0, parseInt(x, 10)),
+    double: (x: any) => parseFloat(x),
+    string: (x: any) => String(x),
+    bool: (x: any) => Boolean(x),
+
+    // Ternary Function
+    cond: (expr: boolean, trueValue: any, falseValue: any) => (expr ? trueValue : falseValue),
+
+    // Null Handling
+    exists: (value: any) => value !== null && value !== undefined,
+    existsOne: (list: any[]) => list.filter(Boolean).length === 1,
+
+    // Time Functions
+    timestamp: () => new Date().toISOString(),
+    duration: (seconds: number) => `${seconds}s`,
+    time: (year: number, month: number, day: number, hour: number, minute: number, second: number, nanosecond: number) => 
+      new Date(Date.UTC(year, month - 1, day, hour, minute, second, nanosecond / 1e6)).toISOString(),
+    date: (year: number, month: number, day: number) => 
+      new Date(Date.UTC(year, month - 1, day)).toISOString().split('T')[0],
+    getDate: (timestamp: Date) => timestamp.getUTCDate(),
+    getDayOfMonth: (timestamp: Date) => timestamp.getUTCDate() - 1,
+    getDayOfWeek: (timestamp: Date) => timestamp.getUTCDay(),
+    getDayOfYear: (timestamp: Date) => {
+      const start = new Date(Date.UTC(timestamp.getUTCFullYear(), 0, 0));
+      const diff = timestamp.getTime() - start.getTime();
+      const oneDay = 1000 * 60 * 60 * 24;
+      return Math.floor(diff / oneDay);
+    },
+    getFullYear: (timestamp: Date) => timestamp.getUTCFullYear(),
+    getHours: (timestamp: Date) => timestamp.getUTCHours(),
+    getMilliseconds: (timestamp: Date) => timestamp.getUTCMilliseconds(),
+    getMinutes: (timestamp: Date) => timestamp.getUTCMinutes(),
+    getMonth: (timestamp: Date) => timestamp.getUTCMonth(),
+    getSeconds: (timestamp: Date) => timestamp.getUTCSeconds(),
+  };
 
   constructor(context: Context | null = null) {
     super();
@@ -242,17 +311,17 @@ class Evaluator extends AbstractParseTreeVisitor<any> implements Visitor<any> {
       if (ctx.LPAREN()) {
         const args = ctx.exprList() ? this.visit(ctx.exprList()!) : [];
 
+        // @ts-ignore
+        if (typeof target === 'object' && target !== null && typeof target[memberName] === "function") {
           // @ts-ignore
-          if (typeof target === 'object' && target !== null && typeof target[memberName] === "function") {
-            // @ts-ignore
-            return target[memberName](...args);
-          } else {
-            throw new Error(`'${memberName}' is not a function`);
-          }
-         } else {
-           // @ts-ignore
-           return target?.[memberName];
-         }
+          return target[memberName](...args);
+        } else {
+          throw new Error(`'${memberName}' is not a function`);
+        }
+      } else {
+        // @ts-ignore
+        return target?.[memberName];
+      }
     } else if (ctx instanceof IndexContext) {
       const target = this.visit(ctx.member());
       const index = this.visit(ctx.expr()!);
@@ -281,15 +350,15 @@ class Evaluator extends AbstractParseTreeVisitor<any> implements Visitor<any> {
     if (ctx.LPAREN()) {
       // It's a function call
       const args = ctx.exprList() ? this.visitExprList(ctx.exprList()!) : [];
-      // @ts-ignore
-      if (typeof this.globalFunctions[identifier] === 'function') {
-        // @ts-ignore
-        return this.globalFunctions[identifier](...args);
+      const func = this.functionRegistry[identifier];
+      
+      if (typeof func === 'function') {
+        // Evaluate the function with the arguments
+        return func(...args);
       } else {
         throw new Error(`Function '${identifier}' is not defined`);
       }
-    } else {	
-      // It's an identifier
+    } else {    
       const variableValue = this.context.getVariable(identifier);
       if (variableValue === undefined) {
         throw new Error(`Variable '${identifier}' is not defined`);
@@ -298,26 +367,11 @@ class Evaluator extends AbstractParseTreeVisitor<any> implements Visitor<any> {
     }
   }
 
+
   // @ts-ignore
   visitPrimary(ctx: PrimaryContext): CelValue {
     if (ctx instanceof IdentOrGlobalCallContext) {
-      const identifier = ctx._id.text;
-      if (ctx.LPAREN()) {
-        const args = ctx.exprList() ? this.visit(ctx.exprList()!) : [];
-        // @ts-ignore
-        if (typeof this.globalFunctions[identifier] === "function") {
-          // @ts-ignore
-          return this.globalFunctions[identifier](...args);
-        } else {
-          throw new Error(`Function '${identifier}' is not defined`);
-        }
-      } else {
-        const variableValue = this.context.getVariable(identifier);
-        if (variableValue === undefined) {
-          throw new Error(`Variable '${identifier}' is not defined`);
-        }
-        return variableValue;
-      }
+      return this.visitIdentOrGlobalCall(ctx);
     } else if (ctx instanceof NestedContext) {
       return this.visit(ctx.expr());
     } else if (ctx instanceof CreateListContext) {
@@ -422,9 +476,18 @@ class Evaluator extends AbstractParseTreeVisitor<any> implements Visitor<any> {
     return null;
   }
 
+  visitFunctionCall(functionName: string, args: any[]): any {
+    const func = functionRegistry[functionName];
+    if (!func) {
+      throw new Error(`Function '${functionName}' is not defined`);
+    }
+    const evaluatedArgs = args.map(arg => this.evaluate(arg));
+    return func(...evaluatedArgs);
+  }
+
   // This will be helpful for debugging
   public visit(tree: ParseTree): any {
-    // console.log("Visiting: ", tree.constructor.name);
+    console.log("Visiting: ", tree.constructor.name);
     const result = super.visit(tree);
     return result;
   }
