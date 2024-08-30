@@ -1,4 +1,4 @@
-# cel-in-js
+# cel-javascript
 
 ## This project is not ready for production yet.
 
@@ -19,7 +19,7 @@ This library provides parser and evaluator for Common Expression Language (CEL) 
 Install the library via npm:
 
 ```bash
-npm install cel-in-js
+npm install @gresb/cel-javascript
 ```
 
 ## Usage
@@ -51,7 +51,7 @@ if (Runtime.canParse(celExpression)) {
 You can validate if a CEL expression can be parsed without evaluating it:
 
 ```
-import { Runtime } from 'cel-in-js';
+import { Runtime } from '@gresb/cel-javascript';
 
 const celExpression = '1 + 2 * 3';
 const canParse = Runtime.canParse(celExpression);
@@ -65,7 +65,7 @@ When parsing a CEL expression, you can catch errors and handle them accordingly:
 
 
 ```
-import { Runtime } from 'cel-in-js';
+import { Runtime } from '@gresb/cel-javascript';
 
 const celExpression = '1 + 2 *'; // Intentional syntax error
 
