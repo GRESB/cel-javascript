@@ -1,5 +1,5 @@
 {
-  "name": "cel-javascript",
+  "name": "@gresb/cel-javascript",
   "version": "0.0.6",
   "description": "Parser and evaluator for Google's Common Expression Language (CEL) in JavaScript using ANTLR4",
   "main": "lib/index.js",
@@ -24,5 +24,24 @@
     "ts-node": "^10.9.2",
     "typescript": "^4.4.4",
     "vitest": "^0.0.111"
-  }
+  },
+  "directories": {
+    "test": "tests"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GRESB/cel-javascript.git"
+  },
+  "keywords": [
+    "cel",
+    "javascript",
+    "typescript",
+    "common",
+    "expression",
+    "language"
+  ],
+  "bugs": {
+    "url": "https://github.com/GRESB/cel-javascript/issues"
+  },
+  "homepage": "https://github.com/GRESB/cel-javascript#readme"
 }
