@@ -27,7 +27,7 @@ npm install @gresb/cel-javascript
 Here is a simple example of how to use the CEL Interpreter:
 
 ```
-import { Runtime } from 'cel-in-js';
+import { Runtime } from 'cel-javascript';
 
 // Define a CEL expression to evaluate
 const celExpression = '1 + 2 * 3';
