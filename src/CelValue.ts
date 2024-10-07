@@ -1,4 +1,4 @@
-export type CelValue = string | number | boolean | CelObject | CelList | null | Buffer;
+export type CelValue = string | number | boolean | CelObject | CelList | null ;
 
 export interface CelObject {
   [key: string]: CelValue;

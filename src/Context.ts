@@ -1,14 +1,25 @@
-import {CelValue} from "./CelValue";
+export default class Context {
+    private variables: { [key: string]: any };
+    private types: { [key: string]: string };
 
-export class Context {
-  variables: { [key: string]: any };
+    constructor(variables: { [key: string]: any } = {}, types: { [key: string]: string } = {}) {
+        this.variables = variables;
+        this.types = types;
+    }
 
-  constructor(variables: { [key: string]: any }) {
-    this.variables = variables;
-  }
+    getVariable(name: string) {
+        return this.variables[name];
+    }
 
-  getVariable(name: string | undefined): CelValue {
-    // @ts-ignore
-    return this.variables[name];
-  }
+    getType(name: string) {
+        return this.types[name];
+    }
+
+    setVariable(name: string, value: any) {
+        this.variables[name] = value;
+    }
+
+    setType(name: string, type: string) {
+        this.types[name] = type;
+    }
 }

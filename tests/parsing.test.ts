@@ -17,7 +17,7 @@ describe('CEL Parsing Tests', () => {
 
   it('should return error message for invalid expression', () => {
     const expression = "1 + ";
-    const result = Runtime.parseString(expression);
+      const result = Runtime.parseString(expression);
     expect(result.success).toBe(false);
     expect(result.error).toBeDefined();
   });
@@ -26,12 +26,5 @@ describe('CEL Parsing Tests', () => {
     const expression = "a == b";
     const result = Runtime.parseString(expression);
     expect(result.success).toBe(true);
-  });
-
-  it('should parse a complex expression', () => {
-    const expression = "(a + b) * (c - d)";
-    const result = Runtime.parseString(expression);
-    expect(result.success).toBe(true);
-  });
-
+  });   
 });

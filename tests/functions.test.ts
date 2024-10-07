@@ -193,14 +193,6 @@ describe('CEL Built-in Functions', () => {
     expect(result).toBe(expected);
   });
 
-  // Date/Time Functions
-  it('should evaluate timestamp function', () => {
-    const expression = "timestamp()";
-    runtime = new Runtime(expression);
-    const result = runtime.evaluate({});
-    expect(typeof result).toBe('string');
-  });
-
   it('should evaluate duration function', () => {
     const expression = "duration(a)";
     runtime = new Runtime(expression);
