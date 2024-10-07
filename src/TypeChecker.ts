@@ -1,10 +1,12 @@
 import CELVisitor from './generated/CELVisitor';
 import Context from './Context';
 
-class TypeChecker extends CELVisitor {
+type FunctionSignature = { args: string[]; returnType: string; varArgs?: boolean };
+
+class TypeChecker extends CELVisitor<any> {
     private context: Context;
 
-    private functionSignatures = {
+    private functionSignatures: { [key: string]: FunctionSignature } = {
         min: { args: ['int'], varArgs: true, returnType: 'int' },
         max: { args: ['int'], varArgs: true, returnType: 'int' },
         abs: { args: ['int'], returnType: 'int' },
@@ -20,7 +22,7 @@ class TypeChecker extends CELVisitor {
         split: { args: ['string', 'string'], returnType: 'list<string>' },
         startsWith: { args: ['string', 'string'], returnType: 'bool' },
         upper: { args: ['string'], returnType: 'string' },
-        size: { args: [['string', 'list<any>', 'int']], returnType: 'int' },
+        size: { args: ['string', 'list<any>', 'int'], returnType: 'int' },
         int: { args: ['any'], returnType: 'int' },
         uint: { args: ['any'], returnType: 'int' },
         double: { args: ['any'], returnType: 'float' },
@@ -48,26 +50,25 @@ class TypeChecker extends CELVisitor {
         this.context = context;
     }
 
-    visit(ctx: any) {
-        const ruleName = this.constructor.name + '.' + this.getRuleName(ctx);
+    visit = (ctx: any): any => {
         const result = super.visit(ctx);
         return result;
     }
 
-    getRuleName(ctx) {
+    getRuleName = (ctx: any): string => {
         return ctx.constructor.name.replace('Context', '');
     }
 
-    visitStart(ctx) {
+    visitStart = (ctx: any): any => {
         return this.visit(ctx.expr());
     }
 
-    visitExpr(ctx) {
+    visitExpr = (ctx: any): any => {
         const child = this.visit(ctx.getChild(0));
         return normalizeType(child);
     }
 
-    visitIdentOrGlobalCall(ctx) {
+    visitIdentOrGlobalCall = (ctx: any): any => {
         const idToken = ctx.IDENTIFIER();
         let id = idToken.getText();
 
@@ -81,11 +82,11 @@ class TypeChecker extends CELVisitor {
         }
 
         if (ctx.getChildCount() >= 3 && ctx.getChild(1).getText() === '(') {
-            const args = ctx.exprList().expr().map((exprCtx) => this.visit(exprCtx));
+            const args = ctx.exprList().expr().map((exprCtx: any) => this.visit(exprCtx));
+            const flattenedArgs = args.map((arg: any) => normalizeType(arg));
 
-            const flattenedArgs = args.map(arg => normalizeType(arg));
+            const signature = this.functionSignatures[id as keyof typeof this.functionSignatures];
 
-            const signature = this.functionSignatures[id];
             if (!signature) {
                 throw new Error(`Function '${id}' is not defined`);
             }
@@ -147,26 +148,32 @@ class TypeChecker extends CELVisitor {
         }
     }
 
-    visitCalcAddSub(ctx) {
+    visitCalcAddSub = (ctx: any): string => {
         let leftType = this.visit(ctx.getChild(0));
 
         for (let i = 1; i < ctx.getChildCount(); i += 2) {
             const operator = ctx.getChild(i).getText();
-            const rightType = this.visit(ctx.getChild(i + 1));
+            let rightType = this.visit(ctx.getChild(i + 1));
 
-            if (operator === '+' && leftType === 'string' && rightType === 'string') {
-                leftType = 'string';
-            } else if (['+', '-'].includes(operator) && (leftType === 'int' || leftType === 'float')) {
-                leftType = leftType === 'float' || rightType === 'float' ? 'float' : 'int';
+            leftType = normalizeType(leftType);
+            rightType = normalizeType(rightType);
+
+            if (operator === '+' || operator === '-') {
+                if ((leftType === 'int' || leftType === 'float') && (rightType === 'int' || rightType === 'float')) {
+                    leftType = leftType === 'float' || rightType === 'float' ? 'float' : 'int';
+                } else {
+                    throw new Error(`Operator '${operator}' requires numeric types, but got '${leftType}' and '${rightType}'`);
+                }
             } else {
-                throw new Error(`Operator '${operator}' requires matching types, but got '${leftType}' and '${rightType}'`);
+                throw new Error(`Unknown operator '${operator}'`);
             }
         }
 
         return leftType;
-    }
+    };
 
-    visitCalcMulDiv(ctx) {
+
+    visitCalcMulDiv = (ctx: any): string => {
         let leftType = this.visit(ctx.getChild(0));
 
         for (let i = 1; i < ctx.getChildCount(); i += 2) {
@@ -183,7 +190,7 @@ class TypeChecker extends CELVisitor {
         return leftType;
     }
 
-    visitLogicalNot(ctx) {
+    visitLogicalNot = (ctx: any): string => {
         const exprType = this.visit(ctx.getChild(1));
         if (exprType !== 'bool') {
             throw new Error(`Logical '!' requires boolean operand, but got '${exprType}'`);
@@ -191,7 +198,7 @@ class TypeChecker extends CELVisitor {
         return 'bool';
     }
 
-    visitConditionalAnd(ctx) {
+    visitConditionalAnd = (ctx: any): string => {
         let resultType = this.visit(ctx.getChild(0));
 
         for (let i = 1; i < ctx.getChildCount(); i += 2) {
@@ -207,7 +214,7 @@ class TypeChecker extends CELVisitor {
         return resultType;
     }
 
-    visitConditionalOr(ctx) {
+    visitConditionalOr = (ctx: any): string => {
         let resultType = this.visit(ctx.getChild(0));
 
         for (let i = 1; i < ctx.getChildCount(); i += 2) {
@@ -223,7 +230,7 @@ class TypeChecker extends CELVisitor {
         return resultType;
     }
 
-    visitPrimaryExpr(ctx) {
+    visitPrimaryExpr = (ctx: any): string => {
         if (ctx.getChildCount() === 1) {
             const result = this.visit(ctx.getChild(0));
             return result;
@@ -235,7 +242,7 @@ class TypeChecker extends CELVisitor {
         }
     }
 
-    visitConstantLiteral(ctx) {
+    visitConstantLiteral = (ctx: any): string => {
         const text = ctx.getText();
         if (!isNaN(Number(text))) {
             if (text.includes('.')) {
@@ -265,7 +272,7 @@ class TypeChecker extends CELVisitor {
     }
 }
 
-function normalizeType(input) {
+const  normalizeType= (input: any): string => {
     if (typeof input === 'string') {
         return input;
     } else if (Array.isArray(input)) {

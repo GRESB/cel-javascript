@@ -16,7 +16,9 @@ export class Runtime {
     }> = [];
 
     constructor(celExpression: string) {
-        const chars = new antlr4.InputStream(celExpression);
+        //const chars = new antlr4.InputStream(celExpression);
+        //        const lexer = new CELLexer(chars);
+        const chars = antlr4.CharStreams.fromString(celExpression);
         const lexer = new CELLexer(chars);
         const tokens = new antlr4.CommonTokenStream(lexer);
         const parser = new CELParser(tokens);
@@ -64,7 +66,7 @@ export class Runtime {
                 typeChecker.visit(runtime.ast);
                 return {success: true};
             } catch (error) {
-                return {success: false, error: error.message};
+                return { success: false, error: (error as Error).message };
             }
         } else {
             return {success: false, error: 'Parsing failed with errors'};
