@@ -56,20 +56,21 @@ describe('TypeChecker Tests using Runtime', () => {
     const expression = "a + b";
     const typeCheckResult = Runtime.typeCheck(expression, {a: 2, b: "4"});
     expect(typeCheckResult.success).toBe(false);
-    expect(typeCheckResult.error).toContain("Operator '+' requires numeric types, but got 'int' and 'string'");
+    expect(typeCheckResult.error).toContain("Operator '+' requires correct types, but got 'int' and 'string'");
   });
 
   it('should return correct type for addition of float and int', () => {
     const expression = "5.5 + 3";
     const typeCheckResult = Runtime.typeCheck(expression, {});
-    expect(typeCheckResult.success).toBe(true);
+    expect(typeCheckResult.success).toBe(false);
+    expect(typeCheckResult.error).toContain("Operator '+' requires correct types, but got 'float' and 'int'");
   });
 
   it('should throw error for invalid operator in arithmetic expression', () => {
     const expression = "5 + 'hello'";
     const typeCheckResult = Runtime.typeCheck(expression, {});
     expect(typeCheckResult.success).toBe(false);
-    expect(typeCheckResult.error).toContain("Operator '+' requires numeric types, but got 'int' and 'string'");
+    expect(typeCheckResult.error).toContain("Operator '+' requires correct types, but got 'int' and 'string'");
   });
 
   it('should throw error for invalid types in function call', () => {
