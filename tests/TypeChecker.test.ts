@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { Runtime } from '../src/Runtime';
+import { Runtime } from '../src';
 
 describe('TypeChecker Tests using Runtime', () => {
   it('should return correct type for int literal', () => {
@@ -43,6 +43,20 @@ describe('TypeChecker Tests using Runtime', () => {
       const typeCheckResult = Runtime.typeCheck(expression, {});
       expect(typeCheckResult.error).toBeUndefined();
     expect(typeCheckResult.success).toBe(true);
+  });
+
+  it('should return correct types for addition of integers with types context', () => {
+    const expression = "a + b";
+    const typeCheckResult = Runtime.typeCheck(expression, {a: 2, b: 4});
+    expect(typeCheckResult.error).toBeUndefined();
+    expect(typeCheckResult.success).toBe(true);
+  });
+
+  it('should return correct type for additiobn of integers', () => {
+    const expression = "a + b";
+    const typeCheckResult = Runtime.typeCheck(expression, {a: 2, b: "4"});
+    expect(typeCheckResult.success).toBe(false);
+    expect(typeCheckResult.error).toContain("Operator '+' requires numeric types, but got 'int' and 'string'");
   });
 
   it('should return correct type for addition of float and int', () => {

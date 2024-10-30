@@ -51,8 +51,7 @@ class TypeChecker extends CELVisitor<any> {
     }
 
     visit = (ctx: any): any => {
-        const result = super.visit(ctx);
-        return result;
+        return super.visit(ctx);
     }
 
     getRuleName = (ctx: any): string => {
@@ -72,9 +71,14 @@ class TypeChecker extends CELVisitor<any> {
         const id = ctx.getChild(0).getText();
 
         if (ctx.children.length === 1) {
-            const variableValue = this.context.getVariable(id);
+            const variableValue: any = this.context.getType(id);
             if (variableValue !== undefined) {
-                return variableValue;
+                if (typeof variableValue === 'string') {
+                    return 'string';
+                } else {
+                    return getType(`${variableValue}`);
+                }
+
             }
             throw new Error(`Variable '${id}' is not defined`);
         } else if (ctx.getChildCount() >= 3 && ctx.getChild(1).getText() === '(') {
@@ -228,11 +232,9 @@ class TypeChecker extends CELVisitor<any> {
 
     visitPrimaryExpr = (ctx: any): string => {
         if (ctx.getChildCount() === 1) {
-            const result = this.visit(ctx.getChild(0));
-            return result;
+            return this.visit(ctx.getChild(0));
         } else if (ctx.getChildCount() === 3 && ctx.getChild(0).getText() === '(') {
-            const result = this.visit(ctx.getChild(1));
-            return result;
+            return this.visit(ctx.getChild(1));
         } else {
             throw new Error('Invalid primary expression');
         }
@@ -240,60 +242,66 @@ class TypeChecker extends CELVisitor<any> {
 
     visitConstantLiteral = (ctx: any): string => {
         const text = ctx.getText();
-        if (!isNaN(Number(text))) {
-            if (text.includes('.')) {
-                return 'float';
-            } else {
-                return 'int';
-            }
-        }
-
-        if (text === 'true' || text === 'false') {
-            return 'bool';
-        }
-
-        if ((text.startsWith('"') || text.startsWith("'")) && (text.endsWith('"') || text.endsWith("'"))) {
-            return 'string';
-        }
-
-        if (text.startsWith('timestamp(') && text.endsWith(')')) {
-            return 'timestamp';
-        }
-
-        if (text.startsWith('[') && text.endsWith(']')) {
-            return 'list';
-        }
-
-        return text;
+        return getType(text);
     }
 
     visitRelationOp = (ctx: any): string => {
-    const leftType = this.visit(ctx.getChild(0));
-    const operator = ctx.getChild(1).getText(); 
-    const rightType = this.visit(ctx.getChild(2));
+        const leftType = this.visit(ctx.getChild(0));
+        const operator = ctx.getChild(1).getText();
+        const rightType = this.visit(ctx.getChild(2));
 
-    const normalizedLeftType = normalizeType(leftType);
-    const normalizedRightType = normalizeType(rightType);
+        const normalizedLeftType = normalizeType(leftType);
+        const normalizedRightType = normalizeType(rightType);
 
-    if (operator === '==' || operator === '!=') {
-        if (normalizedLeftType !== normalizedRightType) {
-            throw new Error(`Mismatching types: Cannot compare '${normalizedLeftType}' and '${normalizedRightType}' with '${operator}'`);
-        }
-    } else if (['<', '<=', '>', '>='].includes(operator)) {
-        if ((normalizedLeftType === 'int' || normalizedLeftType === 'float') && (normalizedRightType === 'int' || normalizedRightType === 'float')) {
+        if (operator === '==' || operator === '!=') {
+            if (normalizedLeftType !== normalizedRightType) {
+                throw new Error(`Mismatching types: Cannot compare '${normalizedLeftType}' and '${normalizedRightType}' with '${operator}'`);
+            }
+        } else if (['<', '<=', '>', '>='].includes(operator)) {
+            if ((normalizedLeftType === 'int' || normalizedLeftType === 'float') && (normalizedRightType === 'int' || normalizedRightType === 'float')) {
+            } else {
+                throw new Error(`Operator '${operator}' requires numeric operands, but got '${normalizedLeftType}' and '${normalizedRightType}'`);
+            }
+        } else if (operator === 'in') {
         } else {
-            throw new Error(`Operator '${operator}' requires numeric operands, but got '${normalizedLeftType}' and '${normalizedRightType}'`);
+            throw new Error(`Unknown operator '${operator}'`);
         }
-    } else if (operator === 'in') {
-    } else {
-        throw new Error(`Unknown operator '${operator}'`);
-    }
 
-    return 'bool';
-};
+        return 'bool';
+    };
 
 
 }
+
+
+
+const getType = (text: any): string => {
+    if (!isNaN(Number(text))) {
+        if (text.includes('.')) {
+            return 'float';
+        } else {
+            return 'int';
+        }
+    }
+
+    if (text === 'true' || text === 'false') {
+        return 'bool';
+    }
+
+    if ((text.startsWith('"') || text.startsWith("'")) && (text.endsWith('"') || text.endsWith("'"))) {
+        return 'string';
+    }
+
+    if (text.startsWith('timestamp(') && text.endsWith(')')) {
+        return 'timestamp';
+    }
+
+    if (text.startsWith('[') && text.endsWith(']')) {
+        return 'list';
+    }
+
+    return text;
+};
 
 const normalizeType = (input: any): string => {
     if (typeof input === 'string') {
