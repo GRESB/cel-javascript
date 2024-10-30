@@ -85,7 +85,7 @@ export class Runtime {
             const evaluator: Evaluator = new Evaluator(contextObj);
             return evaluator.visit(this.ast);
         } else {
-            throw new Error('Parsing failed because of mismatching types');
+            throw new Error(typeCheckResult.error);
         }
     }
     
