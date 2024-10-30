@@ -266,9 +266,36 @@ class TypeChecker extends CELVisitor<any> {
 
         return text;
     }
+
+    visitRelationOp = (ctx: any): string => {
+    const leftType = this.visit(ctx.getChild(0));
+    const operator = ctx.getChild(1).getText(); 
+    const rightType = this.visit(ctx.getChild(2));
+
+    const normalizedLeftType = normalizeType(leftType);
+    const normalizedRightType = normalizeType(rightType);
+
+    if (operator === '==' || operator === '!=') {
+        if (normalizedLeftType !== normalizedRightType) {
+            throw new Error(`Mismatching types: Cannot compare '${normalizedLeftType}' and '${normalizedRightType}' with '${operator}'`);
+        }
+    } else if (['<', '<=', '>', '>='].includes(operator)) {
+        if ((normalizedLeftType === 'int' || normalizedLeftType === 'float') && (normalizedRightType === 'int' || normalizedRightType === 'float')) {
+        } else {
+            throw new Error(`Operator '${operator}' requires numeric operands, but got '${normalizedLeftType}' and '${normalizedRightType}'`);
+        }
+    } else if (operator === 'in') {
+    } else {
+        throw new Error(`Unknown operator '${operator}'`);
+    }
+
+    return 'bool';
+};
+
+
 }
 
-const  normalizeType = (input: any): string => {
+const normalizeType = (input: any): string => {
     if (typeof input === 'string') {
         return input;
     } else if (Array.isArray(input)) {
@@ -280,6 +307,6 @@ const  normalizeType = (input: any): string => {
     } else {
         throw new Error(`Unsupported input type: ${typeof input}`);
     }
-}
+};
 
 export default TypeChecker;

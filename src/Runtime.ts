@@ -63,17 +63,17 @@ export class Runtime {
         const runtime: Runtime = new Runtime(expression);
         if (runtime.ast !== null) {
             try {
-                // const contextObj: Context = new Context(context, typesContext);
-                const typeChecker: TypeChecker = new TypeChecker(typesContext);
+                const typeChecker: TypeChecker = new TypeChecker(new Context({}, typesContext));
                 typeChecker.visit(runtime.ast);
-                return {success: true};
+                return { success: true };
             } catch (error) {
                 return { success: false, error: (error as Error).message };
             }
         } else {
-            return {success: false, error: 'Parsing failed with errors'};
+            return { success: false, error: 'Parsing failed with errors' };
         }
     }
+
 
     evaluate(context: any) {
         if (!this.ast) {

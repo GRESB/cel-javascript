@@ -84,4 +84,42 @@ describe('TypeChecker Tests using Runtime', () => {
     expect(typeCheckResult.success).toBe(false);
     expect(typeCheckResult.error).toContain("requires boolean operands");
   });
+
+it('Should return error when a comparison has a type mismatch', () => {
+  const expression = "2 == '2'";
+  const typeCheckResult = Runtime.typeCheck(expression, {});
+  expect(typeCheckResult.success).toBe(false);
+  expect(typeCheckResult.error).toContain("Mismatching types");
+});
+
+it('Should return error when a comparison has a type mismatch', () => {
+  const expression = "'23' == 23";
+  const typeCheckResult = Runtime.typeCheck(expression, {});
+  expect(typeCheckResult.success).toBe(false);
+  expect(typeCheckResult.error).toContain("Mismatching types");
+});
+
+it('Should return error when a comparison has a type mismatch', () => {
+  const expression = "'23' == true";
+  const typeCheckResult = Runtime.typeCheck(expression, {});
+  expect(typeCheckResult.success).toBe(false);
+  expect(typeCheckResult.error).toContain("Mismatching types");
+});
+
+it('Should return error when a comparison has a type mismatch', () => {
+  const expression = "'true' == true";
+  const typeCheckResult = Runtime.typeCheck(expression, {});
+  expect(typeCheckResult.success).toBe(false);
+  expect(typeCheckResult.error).toContain("Mismatching types");
+});
+
+it('Should return error when a comparison has a type mismatch', () => {
+  const expression = "'true' == true";
+  const typeCheckResult = Runtime.typeCheck(expression, {});
+  expect(typeCheckResult.success).toBe(false);
+  expect(typeCheckResult.error).toContain("Mismatching types");
+});
+
+
+
 });

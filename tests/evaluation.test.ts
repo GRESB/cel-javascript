@@ -29,7 +29,7 @@ describe('CEL Evaluation Tests', () => {
   it('Should return error when a comparison has a type mismatch', () => {
     const expression = "2 == '2'";
     const runtime = new Runtime(expression);
-    expect(() => runtime.evaluate(expression)).toThrow('Mismatching types');
+    expect(() => runtime.evaluate(expression)).toThrow('Parsing failed because of mismatching types');
   });
 
   it('should evaluate an expression with arithmetic and comparison', () => {
