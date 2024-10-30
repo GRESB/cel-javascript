@@ -157,14 +157,13 @@ class TypeChecker extends CELVisitor<any> {
 
             leftType = normalizeType(leftType);
             rightType = normalizeType(rightType);
-
-            if (operator === '+' || operator === '-') {
-                if ((leftType === 'int' || leftType === 'float') && (rightType === 'int' || rightType === 'float')) {
-                    leftType = leftType === 'float' || rightType === 'float' ? 'float' : 'int';
-                } else {
-                    throw new Error(`Operator '${operator}' requires numeric types, but got '${leftType}' and '${rightType}'`);
-                }
-            } else {
+            const operators: string[] = ['+', '-'];
+            const possibleTypesAdd: string[] = ['int', 'float', 'string'];
+            const possibleTypesSub: string[] = ['int', 'float'];
+            if((leftType !== rightType) || (operator === '+' && !possibleTypesAdd.includes(leftType)) || (operator === '-' && !possibleTypesSub.includes(leftType))) {
+                throw new Error(`Operator '${operator}' requires correct types, but got '${leftType}' and '${rightType}'`);
+            }
+            if(!operators.includes(operator)) {
                 throw new Error(`Unknown operator '${operator}'`);
             }
         }
@@ -178,8 +177,9 @@ class TypeChecker extends CELVisitor<any> {
 
         for (let i = 1; i < ctx.getChildCount(); i += 2) {
             const operator = ctx.getChild(i).getText();
-            const rightType = this.visit(ctx.getChild(i + 1));
-
+            let rightType = this.visit(ctx.getChild(i + 1));
+            leftType = normalizeType(leftType);
+            rightType = normalizeType(rightType);
             if (['*', '/', '%'].includes(operator) && (leftType === 'int' || leftType === 'float')) {
                 leftType = leftType === 'float' || rightType === 'float' ? 'float' : 'int';
             } else {
@@ -191,7 +191,8 @@ class TypeChecker extends CELVisitor<any> {
     }
 
     visitLogicalNot = (ctx: any): string => {
-        const exprType = this.visit(ctx.getChild(1));
+        let exprType = this.visit(ctx.getChild(1));
+        exprType = normalizeType(exprType);
         if (exprType !== 'bool') {
             throw new Error(`Logical '!' requires boolean operand, but got '${exprType}'`);
         }
@@ -200,10 +201,10 @@ class TypeChecker extends CELVisitor<any> {
 
     visitConditionalAnd = (ctx: any): string => {
         let resultType = this.visit(ctx.getChild(0));
-
+        resultType = normalizeType(resultType);
         for (let i = 1; i < ctx.getChildCount(); i += 2) {
-            const nextExprType = this.visit(ctx.getChild(i + 1));
-
+            let nextExprType = this.visit(ctx.getChild(i + 1));
+            nextExprType = normalizeType(nextExprType);
             if (resultType !== 'bool' || nextExprType !== 'bool') {
                 throw new Error(`Logical '&&' requires boolean operands, but got '${resultType}' and '${nextExprType}'`);
             }
@@ -216,10 +217,10 @@ class TypeChecker extends CELVisitor<any> {
 
     visitConditionalOr = (ctx: any): string => {
         let resultType = this.visit(ctx.getChild(0));
-
+        resultType = normalizeType(resultType);
         for (let i = 1; i < ctx.getChildCount(); i += 2) {
-            const nextExprType = this.visit(ctx.getChild(i + 1));
-
+            let nextExprType = this.visit(ctx.getChild(i + 1));
+            nextExprType = normalizeType(nextExprType);
             if (resultType !== 'bool' || nextExprType !== 'bool') {
                 throw new Error(`Logical '||' requires boolean operands, but got '${resultType}' and '${nextExprType}'`);
             }
@@ -273,8 +274,6 @@ class TypeChecker extends CELVisitor<any> {
 
 }
 
-
-
 const getType = (text: any): string => {
     if (!isNaN(Number(text))) {
         if (text.includes('.')) {
@@ -307,11 +306,12 @@ const normalizeType = (input: any): string => {
     if (typeof input === 'string') {
         return input;
     } else if (Array.isArray(input)) {
-        const flatArray = input.flat(Infinity);
+        const flatArray = input.flat(Infinity)
+                                      .filter(value => value !== undefined && value !== null && value !== '');
         if (flatArray.length === 1) {
             return String(flatArray[0]);
         }
-        return flatArray.map(String).join(',');
+        return flatArray.flatMap(String).join(',');
     } else {
         throw new Error(`Unsupported input type: ${typeof input}`);
     }
