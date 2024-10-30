@@ -121,5 +121,11 @@ it('Should return error when a comparison has a type mismatch', () => {
 });
 
 
+it('Should return error when a comparison has a type mismatch', () => {
+  const expression = "1 == 1.2";
+  const typeCheckResult = Runtime.typeCheck(expression, {});
+  expect(typeCheckResult.success).toBe(false);
+  expect(typeCheckResult.error).toContain("Mismatching types");
+});
 
 });
