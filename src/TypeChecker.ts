@@ -62,9 +62,9 @@ class TypeChecker extends CELVisitor<any> {
         return this.visit(ctx.expr());
     }
 
-visitExpr = (ctx: any): any => {
-    return this.visit(ctx.getChild(0));
-};
+    visitExpr = (ctx: any): any => {
+        return this.visit(ctx.getChild(0));
+    };
 
 
 
@@ -176,29 +176,29 @@ visitExpr = (ctx: any): any => {
         return leftType;
     };
 
-visitCalcMulDiv = (ctx: any): string => {
-    let leftType = this.visit(ctx.getChild(0));
+    visitCalcMulDiv = (ctx: any): string => {
+        let leftType = this.visit(ctx.getChild(0));
 
-    for (let i = 1; i < ctx.getChildCount(); i += 2) {
-        const operator = ctx.getChild(i).getText();
-        let rightType = this.visit(ctx.getChild(i + 1));
+        for (let i = 1; i < ctx.getChildCount(); i += 2) {
+            const operator = ctx.getChild(i).getText();
+            let rightType = this.visit(ctx.getChild(i + 1));
 
-        leftType = normalizeType(leftType);
-        rightType = normalizeType(rightType);
+            leftType = normalizeType(leftType);
+            rightType = normalizeType(rightType);
 
-        if (['*', '/', '%'].includes(operator)) {
-            if (isNumericType(leftType) && isNumericType(rightType)) {
-                leftType = leftType === 'float' || rightType === 'float' ? 'float' : 'int';
+            if (['*', '/', '%'].includes(operator)) {
+                if (isNumericType(leftType) && isNumericType(rightType)) {
+                    leftType = leftType === 'float' || rightType === 'float' ? 'float' : 'int';
+                } else {
+                    throw new Error(`Operator '${operator}' requires numeric operands, but got '${leftType}' and '${rightType}'`);
+                }
             } else {
-                throw new Error(`Operator '${operator}' requires numeric operands, but got '${leftType}' and '${rightType}'`);
+                throw new Error(`Unknown operator '${operator}'`);
             }
-        } else {
-            throw new Error(`Unknown operator '${operator}'`);
         }
-    }
 
-    return leftType;
-};
+        return leftType;
+    };
 
     visitLogicalNot = (ctx: any): string => {
         let exprType = this.visit(ctx.getChild(1));
@@ -251,37 +251,37 @@ visitCalcMulDiv = (ctx: any): string => {
         }
     }
 
-visitConstantLiteral = (ctx: any): string => {
-    return this.visit(ctx.getChild(0));
-};
+    visitConstantLiteral = (ctx: any): string => {
+        return this.visit(ctx.getChild(0));
+    };
 
 
 
 
 
-visitInt = (ctx: any): string => {
-    return 'int';
-};
+    visitInt = (ctx: any): string => {
+        return 'int';
+    };
 
-visitDouble = (ctx: any): string => {
-    return 'float';
-};
+    visitDouble = (ctx: any): string => {
+        return 'float';
+    };
 
-visitString = (ctx: any): string => {
-    return 'string';
-};
+    visitString = (ctx: any): string => {
+        return 'string';
+    };
 
-visitBoolTrue = (ctx: any): string => {
-    return 'bool';
-};
+    visitBoolTrue = (ctx: any): string => {
+        return 'bool';
+    };
 
-visitBoolFalse = (ctx: any): string => {
-    return 'bool';
-};
+    visitBoolFalse = (ctx: any): string => {
+        return 'bool';
+    };
 
-visitNull = (ctx: any): string => {
-    return 'null';
-};
+    visitNull = (ctx: any): string => {
+        return 'null';
+    };
 
 
     visitRelationOp = (ctx: any): string => {
@@ -348,6 +348,10 @@ const getType = (value: any): string => {
         return 'null';
     }
 
+    if (value instanceof Date) {
+        return 'timestamp';
+    }
+
     if (typeof value === 'object') {
         return 'map';
     }
@@ -373,27 +377,6 @@ const normalizeType = (input: any): string => {
     } else {
         throw new Error(`Unsupported input type: ${typeof input}`);
     }
-};
-
-
-const getTypeFromText = (text: string): string => {
-    text = text.trim();
-    if (/^\d+$/.test(text)) {
-        return 'int';
-    }
-    if (/^\d+\.\d+$/.test(text)) {
-        return 'float';
-    }
-    if (text === 'true' || text === 'false') {
-        return 'bool';
-    }
-    if ((text.startsWith('"') && text.endsWith('"')) || (text.startsWith("'") && text.endsWith("'"))) {
-        return 'string';
-    }
-    if (text === 'null') {
-        return 'null';
-    }
-    return 'unknown';
 };
 
 
