@@ -77,7 +77,7 @@ describe('TypeChecker Tests using Runtime', () => {
     const expression = "max('string', 1)";
     const typeCheckResult = Runtime.typeCheck(expression, {});
     expect(typeCheckResult.success).toBe(false);
-    expect(typeCheckResult.error).toContain("Cannot read properties of null (reading 'map')");
+    expect(typeCheckResult.error).toContain("Argument 1 of function 'max' expects type 'int', but got 'string'");
   });
 
   it('should return correct type for logical NOT expression', () => {

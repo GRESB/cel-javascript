@@ -82,10 +82,10 @@ class TypeChecker extends CELVisitor<any> {
             }
             throw new Error(`Variable '${id}' is not defined`);
         } else if (ctx.getChildCount() >= 3 && ctx.getChild(1).getText() === '(') {
-            const args = ctx.exprList().expr().map((exprCtx: any) => this.visit(exprCtx));
-            const flattenedArgs = args.map((arg: any) => normalizeType(arg));
+            const args: any[] = this.visit(ctx.exprList());
+            const flattenedArgs = args.filter(value => value !== undefined && value !== null && value !== '');
 
-            const signature = this.functionSignatures[id as keyof typeof this.functionSignatures];
+            const signature = this.functionSignatures[id];
 
             if (!signature) {
                 throw new Error(`Function '${id}' is not defined`);
