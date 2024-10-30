@@ -63,7 +63,7 @@ export class Runtime {
         const runtime: Runtime = new Runtime(expression);
         if (runtime.ast !== null) {
             try {
-                const typeChecker: TypeChecker = new TypeChecker(new Context({}, typesContext));
+                const typeChecker: TypeChecker = new TypeChecker(new Context(typesContext));
                 typeChecker.visit(runtime.ast);
                 return { success: true };
             } catch (error) {
@@ -73,6 +73,7 @@ export class Runtime {
             return { success: false, error: 'Parsing failed with errors' };
         }
     }
+
 
 
     evaluate(context: any) {
