@@ -69,19 +69,15 @@ class TypeChecker extends CELVisitor<any> {
     }
 
     visitIdentOrGlobalCall = (ctx: any): any => {
-        const idToken = ctx.IDENTIFIER();
-        let id = idToken.getText();
+        const id = ctx.getChild(0).getText();
 
-        if (ctx.IDENTIFIER().length > 1) {
-            let baseId = id;
-            for (let i = 1; i < ctx.IDENTIFIER().length; i++) {
-                const field = ctx.IDENTIFIER(i).getText();
-                baseId += `.${field}`;
+        if (ctx.children.length === 1) {
+            const variableValue = this.context.getVariable(id);
+            if (variableValue !== undefined) {
+                return variableValue;
             }
-            id = baseId;
-        }
-
-        if (ctx.getChildCount() >= 3 && ctx.getChild(1).getText() === '(') {
+            throw new Error(`Variable '${id}' is not defined`);
+        } else if (ctx.getChildCount() >= 3 && ctx.getChild(1).getText() === '(') {
             const args = ctx.exprList().expr().map((exprCtx: any) => this.visit(exprCtx));
             const flattenedArgs = args.map((arg: any) => normalizeType(arg));
 
@@ -272,7 +268,7 @@ class TypeChecker extends CELVisitor<any> {
     }
 }
 
-const  normalizeType= (input: any): string => {
+const  normalizeType = (input: any): string => {
     if (typeof input === 'string') {
         return input;
     } else if (Array.isArray(input)) {

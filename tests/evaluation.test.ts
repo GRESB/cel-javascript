@@ -26,6 +26,12 @@ describe('CEL Evaluation Tests', () => {
     expect(result).toBe(true);
   });
 
+  it('Should return error when a comparison has a type mismatch', () => {
+    const expression = "2 == '2'";
+    const runtime = new Runtime(expression);
+    expect(() => runtime.evaluate(expression)).toThrow('Mismatching types');
+  });
+
   it('should evaluate an expression with arithmetic and comparison', () => {
     const expression = "a + b > c";
     const runtime = new Runtime(expression);
@@ -130,7 +136,7 @@ describe('CEL Evaluation Tests', () => {
     const expression = '2 * (3 + 4) - (10 / 2) + 7';
     const runtime = new Runtime(expression);
     const expected = 16; 
-    const result = runtime.evaluate("{}");
+    const result = runtime.evaluate({});
     expect(result).toBe(expected);
   });
 

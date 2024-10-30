@@ -57,7 +57,6 @@ export class Evaluator extends CELVisitor<any> {
     const left = this.visit(ctx.getChild(0));
     const operator = ctx.getChild(1).getText();
     const right = this.visit(ctx.getChild(2));
-
     switch (operator) {
       case '==':
         return left === right;

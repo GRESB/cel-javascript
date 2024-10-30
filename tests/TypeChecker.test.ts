@@ -55,7 +55,7 @@ describe('TypeChecker Tests using Runtime', () => {
     const expression = "5 + 'hello'";
     const typeCheckResult = Runtime.typeCheck(expression, {});
     expect(typeCheckResult.success).toBe(false);
-      expect(typeCheckResult.error).toContain("Operator '+' requires numeric types, but got 'int' and 'string'");
+    expect(typeCheckResult.error).toContain("Operator '+' requires numeric types, but got 'int' and 'string'");
   });
 
   it('should throw error for invalid types in function call', () => {
