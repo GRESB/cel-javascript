@@ -80,7 +80,7 @@ export class Runtime {
             throw new Error('AST is not available. Parsing might have failed.');
         }
         const contextObj: Context = new Context(context);
-        const typeCheckResult = Runtime.typeCheck(this.celExpression, contextObj);
+        const typeCheckResult = Runtime.typeCheck(this.celExpression, context);
         if(typeCheckResult.success) {
             const evaluator: Evaluator = new Evaluator(contextObj);
             return evaluator.visit(this.ast);
