@@ -183,4 +183,23 @@ describe('CEL Evaluation Tests', () => {
         const runtime = new Runtime(expression);
         expect(() => runtime.evaluate("{}")).toThrow('Variable \'undefinedVar\' is not defined');
     });
+
+    it('should return error that you can not compare a float with a int', () => {
+        const expression = "a > b && b < c || a == c";
+        const runtime = new Runtime(expression);
+        const context = { a: 5, b: 3.3, c: 5 };
+        expect(() => runtime.evaluate(context)).toThrow('Mismatching types: Cannot compare \'int\' and \'float\' with \'>\'');
+    });
+
+    it('should return error when comparing with numerics instead of boolean for ||', () => {
+        const expression = "1 || 2.3 == 4.0";
+        const runtime = new Runtime(expression);
+        expect(() => runtime.evaluate({})).toThrow('Logical \'||\' requires boolean operands, but got \'int\' and \'bool');
+    });
+
+    it('should return error when comparing with ||', () => {
+        const expression = "1 <= 2.3";
+        const runtime = new Runtime(expression);
+        expect(() => runtime.evaluate({})).toThrow('Mismatching types: Cannot compare \'int\' and \'float\' with \'<=\'');
+    });
 });
