@@ -154,22 +154,14 @@ class TypeChecker extends CELVisitor<any> {
             let rightType = this.visit(ctx.getChild(i + 1));
             rightType = normalizeType(rightType);
 
-            if (operator === '+') {
-                if (leftType === 'string' && rightType === 'string') {
-                    leftType = 'string';
-                } else if (isNumericType(leftType) && isNumericType(rightType)) {
-                    leftType = leftType === 'float' || rightType === 'float' ? 'float' : 'int';
-                } else {
-                    throw new Error(`Operator '+' requires numeric or string operands, but got '${leftType}' and '${rightType}'`);
-                }
-            } else if (operator === '-') {
-                if (isNumericType(leftType) && isNumericType(rightType)) {
-                    leftType = leftType === 'float' || rightType === 'float' ? 'float' : 'int';
-                } else {
-                    throw new Error(`Operator '-' requires numeric operands, but got '${leftType}' and '${rightType}'`);
-                }
-            } else {
+            const operators: string[] = ['+', '-'];
+            const possibleTypesAdd: string[] = ['int', 'float', 'string'];
+            const possibleTypesSub: string[] = ['int', 'float'];
+            if(!operators.includes(operator)) {
                 throw new Error(`Unknown operator '${operator}'`);
+            }
+            if((leftType !== rightType) || (operator === '+' && !possibleTypesAdd.includes(leftType)) || (operator === '-' && !possibleTypesSub.includes(leftType))) {
+                throw new Error(`Operator '${operator}' requires matching types, but got '${leftType}' and '${rightType}'`);
             }
         }
 
@@ -186,14 +178,13 @@ class TypeChecker extends CELVisitor<any> {
             leftType = normalizeType(leftType);
             rightType = normalizeType(rightType);
 
-            if (['*', '/', '%'].includes(operator)) {
-                if (isNumericType(leftType) && isNumericType(rightType)) {
-                    leftType = leftType === 'float' || rightType === 'float' ? 'float' : 'int';
-                } else {
-                    throw new Error(`Operator '${operator}' requires numeric operands, but got '${leftType}' and '${rightType}'`);
-                }
-            } else {
+            const operators: string[] = ['*', '/', '%'];
+            const possibleCalcMulDivTypes: string[] = ['int', 'float'];
+            if(!operators.includes(operator)) {
                 throw new Error(`Unknown operator '${operator}'`);
+            }
+            if((leftType !== rightType) || (!possibleCalcMulDivTypes.includes(leftType))) {
+                throw new Error(`Operator '${operator}' requires matching numeric operands, but got '${leftType}' and '${rightType}'`);
             }
         }
 
@@ -254,10 +245,6 @@ class TypeChecker extends CELVisitor<any> {
     visitConstantLiteral = (ctx: any): string => {
         return this.visit(ctx.getChild(0));
     };
-
-
-
-
 
     visitInt = (ctx: any): string => {
         return 'int';
@@ -323,6 +310,10 @@ class TypeChecker extends CELVisitor<any> {
 }
 
 const getType = (value: any): string => {
+    if (value === null) {
+        return 'null';
+    }
+
     if (Array.isArray(value)) {
         const elementTypes = [...new Set(value.map(getType))];
         if (elementTypes.length === 1) {
@@ -342,10 +333,6 @@ const getType = (value: any): string => {
 
     if (typeof value === 'string') {
         return 'string';
-    }
-
-    if (value === null) {
-        return 'null';
     }
 
     if (value instanceof Date) {
@@ -377,11 +364,6 @@ const normalizeType = (input: any): string => {
     } else {
         throw new Error(`Unsupported input type: ${typeof input}`);
     }
-};
-
-
-const isNumericType = (type: string): boolean => {
-    return type === 'int' || type === 'float';
 };
 
 export default TypeChecker;

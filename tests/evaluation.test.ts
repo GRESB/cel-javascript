@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { Runtime } from '../src/Runtime';
+import { Runtime } from '../src';
 
 describe('CEL Evaluation Tests', () => {
 
@@ -32,6 +32,18 @@ describe('CEL Evaluation Tests', () => {
         expect(() => runtime.evaluate(expression)).toThrow('Mismatching types: Cannot compare \'int\' and \'string\' with \'==\'');
     });
 
+    it('Should return error when multiplying with int and a float', () => {
+        const expression = "33 * 33.3";
+        const runtime = new Runtime(expression);
+        expect(() => runtime.evaluate(expression)).toThrow('Operator \'*\' requires matching numeric operands, but got \'int\' and \'float\'');
+    });
+
+    it('Should return error when dividing with int and a float', () => {
+        const expression = "12.5 / 6";
+        const runtime = new Runtime(expression);
+        expect(() => runtime.evaluate(expression)).toThrow('Operator \'/\' requires matching numeric operands, but got \'float\' and \'int\'');
+    });
+
     it('should evaluate an expression with arithmetic and comparison', () => {
         const expression = "a + b > c";
         const runtime = new Runtime(expression);
@@ -51,6 +63,18 @@ describe('CEL Evaluation Tests', () => {
         const runtime = new Runtime(expression);
         const result = runtime.evaluate({});
         expect(result).toBe(15);  // (5) * (3) = 15
+    });
+
+    it('should return a error when evaluate nested arithmetic expressions with a mismatching type', () => {
+        const expression = "(2 + 3.3) * (4 - 1)";
+        const runtime = new Runtime(expression);
+        expect(() => runtime.evaluate(expression)).toThrow('Operator \'+\' requires matching types, but got \'int\' and \'float\'');
+    });
+
+    it('should return a error when evaluate nested arithmetic expressions with a mismatching type and try float with .0', () => {
+        const expression = "(2 + 3.0) * (4 - 1)";
+        const runtime = new Runtime(expression);
+        expect(() => runtime.evaluate(expression)).toThrow('Operator \'+\' requires matching types, but got \'int\' and \'float\'');
     });
 
     it('should evaluate logical expressions with AND and OR', () => {
