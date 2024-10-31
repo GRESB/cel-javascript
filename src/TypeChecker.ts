@@ -276,16 +276,18 @@ class TypeChecker extends CELVisitor<any> {
         const operator = ctx.getChild(1).getText();
         const rightType = this.visit(ctx.getChild(2));
 
-        const normalizedLeftType = normalizeType(leftType);
-        const normalizedRightType = normalizeType(rightType);
+        const normalizedLeftType: string = normalizeType(leftType);
+        const normalizedRightType: string = normalizeType(rightType);
 
         if (operator === '==' || operator === '!=') {
             if (normalizedLeftType !== normalizedRightType) {
                 throw new Error(`Mismatching types: Cannot compare '${normalizedLeftType}' and '${normalizedRightType}' with '${operator}'`);
             }
         } else if (['<', '<=', '>', '>='].includes(operator)) {
-            if ((normalizedLeftType === 'int' || normalizedLeftType === 'float') && (normalizedRightType === 'int' || normalizedRightType === 'float')) {
-            } else {
+            if (normalizedLeftType !== normalizedRightType) {
+                throw new Error(`Mismatching types: Cannot compare '${normalizedLeftType}' and '${normalizedRightType}' with '${operator}'`);
+            }
+            if(!(normalizedLeftType === 'int' || normalizedLeftType === 'float')) {
                 throw new Error(`Operator '${operator}' requires numeric operands, but got '${normalizedLeftType}' and '${normalizedRightType}'`);
             }
         } else if (operator === 'in') {
