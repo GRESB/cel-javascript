@@ -8,6 +8,7 @@ import TypeChecker from './TypeChecker';
 
 export class Runtime {
     private ast: any = null;
+    private celExpression: string;
     private errors: Array<{
         line: number;
         column: number;
@@ -18,6 +19,7 @@ export class Runtime {
     constructor(celExpression: string) {
         //const chars = new antlr4.InputStream(celExpression);
         //        const lexer = new CELLexer(chars);
+        this.celExpression = celExpression;
         const chars = antlr4.CharStreams.fromString(celExpression);
         const lexer = new CELLexer(chars);
         const tokens = new antlr4.CommonTokenStream(lexer);
@@ -41,12 +43,12 @@ export class Runtime {
     }
 
     static canParse(celExpression: string): boolean {
-        const runtime = new Runtime(celExpression);
+        const runtime: Runtime = new Runtime(celExpression);
         return runtime.ast !== null;
     }
 
     static parseString(celExpression: string): { success: boolean; error?: string } {
-        const runtime = new Runtime(celExpression);
+        const runtime: Runtime = new Runtime(celExpression);
         if (runtime.ast !== null) {
             return { success: true };
         } else {
@@ -57,29 +59,35 @@ export class Runtime {
         }
     }
     
-    static typeCheck(expression: string, typesContext: { [key: string]: string }): { success: boolean; error?: string } {
-        const runtime = new Runtime(expression);
+    static typeCheck(expression: string, typesContext: { [key: string]: any }): { success: boolean; error?: string } {
+        const runtime: Runtime = new Runtime(expression);
         if (runtime.ast !== null) {
             try {
-                const context = new Context({}, typesContext);
-                const typeChecker = new TypeChecker(context);
+                const typeChecker: TypeChecker = new TypeChecker(new Context(typesContext));
                 typeChecker.visit(runtime.ast);
-                return {success: true};
+                return { success: true };
             } catch (error) {
                 return { success: false, error: (error as Error).message };
             }
         } else {
-            return {success: false, error: 'Parsing failed with errors'};
+            return { success: false, error: 'Parsing failed with errors' };
         }
     }
+
+
 
     evaluate(context: any) {
         if (!this.ast) {
             throw new Error('AST is not available. Parsing might have failed.');
         }
-        const contextObj = new Context(context);
-        const evaluator = new Evaluator(contextObj);
-        return evaluator.visit(this.ast);
+        const contextObj: Context = new Context(context);
+        const typeCheckResult = Runtime.typeCheck(this.celExpression, context);
+        if(typeCheckResult.success) {
+            const evaluator: Evaluator = new Evaluator(contextObj);
+            return evaluator.visit(this.ast);
+        } else {
+            throw new Error(typeCheckResult.error);
+        }
     }
     
 }

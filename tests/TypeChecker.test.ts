@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { Runtime } from '../src/Runtime';
+import { Runtime } from '../src';
 
 describe('TypeChecker Tests using Runtime', () => {
   it('should return correct type for int literal', () => {
@@ -45,24 +45,39 @@ describe('TypeChecker Tests using Runtime', () => {
     expect(typeCheckResult.success).toBe(true);
   });
 
+  it('should return correct types for addition of integers with types context', () => {
+    const expression = "a + b";
+    const typeCheckResult = Runtime.typeCheck(expression, {a: 2, b: 4});
+    expect(typeCheckResult.error).toBeUndefined();
+    expect(typeCheckResult.success).toBe(true);
+  });
+
+  it('should return error when using a string and a int to uses as an add on', () => {
+    const expression = "a + b";
+    const typeCheckResult = Runtime.typeCheck(expression, {a: 2, b: "4"});
+    expect(typeCheckResult.success).toBe(false);
+    expect(typeCheckResult.error).toContain("Operator '+' requires matching types, but got 'int' and 'string'");
+  });
+
   it('should return correct type for addition of float and int', () => {
     const expression = "5.5 + 3";
     const typeCheckResult = Runtime.typeCheck(expression, {});
-    expect(typeCheckResult.success).toBe(true);
+    expect(typeCheckResult.success).toBe(false);
+    expect(typeCheckResult.error).toContain("Operator '+' requires matching types, but got 'float' and 'int'");
   });
 
   it('should throw error for invalid operator in arithmetic expression', () => {
     const expression = "5 + 'hello'";
     const typeCheckResult = Runtime.typeCheck(expression, {});
     expect(typeCheckResult.success).toBe(false);
-      expect(typeCheckResult.error).toContain("Operator '+' requires numeric types, but got 'int' and 'string'");
+    expect(typeCheckResult.error).toContain("Operator '+' requires matching types, but got 'int' and 'string'");
   });
 
   it('should throw error for invalid types in function call', () => {
     const expression = "max('string', 1)";
     const typeCheckResult = Runtime.typeCheck(expression, {});
     expect(typeCheckResult.success).toBe(false);
-    expect(typeCheckResult.error).toContain("Cannot read properties of null (reading 'map')");
+    expect(typeCheckResult.error).toContain("Argument 1 of function 'max' expects type 'int', but got 'string'");
   });
 
   it('should return correct type for logical NOT expression', () => {
@@ -84,4 +99,48 @@ describe('TypeChecker Tests using Runtime', () => {
     expect(typeCheckResult.success).toBe(false);
     expect(typeCheckResult.error).toContain("requires boolean operands");
   });
+
+it('Should return error when a comparison has a type mismatch', () => {
+  const expression = "2 == '2'";
+  const typeCheckResult = Runtime.typeCheck(expression, {});
+  expect(typeCheckResult.success).toBe(false);
+  expect(typeCheckResult.error).toContain("Mismatching types");
+});
+
+it('Should return error when a comparison has a type mismatch', () => {
+  const expression = "'23' == 23";
+  const typeCheckResult = Runtime.typeCheck(expression, {});
+  expect(typeCheckResult.success).toBe(false);
+  expect(typeCheckResult.error).toContain("Mismatching types");
+});
+
+it('Should return error when a comparison has a type mismatch', () => {
+  const expression = "'23' == true";
+  const typeCheckResult = Runtime.typeCheck(expression, {});
+  expect(typeCheckResult.success).toBe(false);
+  expect(typeCheckResult.error).toContain("Mismatching types");
+});
+
+it('Should return error when a comparison has a type mismatch', () => {
+  const expression = "'true' == true";
+  const typeCheckResult = Runtime.typeCheck(expression, {});
+  expect(typeCheckResult.success).toBe(false);
+  expect(typeCheckResult.error).toContain("Mismatching types");
+});
+
+it('Should return error when a comparison has a type mismatch', () => {
+  const expression = "'true' == true";
+  const typeCheckResult = Runtime.typeCheck(expression, {});
+  expect(typeCheckResult.success).toBe(false);
+  expect(typeCheckResult.error).toContain("Mismatching types");
+});
+
+
+it('Should return error when a comparison has a type mismatch', () => {
+  const expression = "1 == 1.2";
+  const typeCheckResult = Runtime.typeCheck(expression, {});
+  expect(typeCheckResult.success).toBe(false);
+  expect(typeCheckResult.error).toContain("Mismatching types");
+});
+
 });

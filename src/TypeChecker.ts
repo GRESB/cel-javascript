@@ -1,7 +1,7 @@
 import CELVisitor from './generated/CELVisitor';
 import Context from './Context';
 
-type FunctionSignature = { args: string[]; returnType: string; varArgs?: boolean };
+type FunctionSignature = { args: (string | string[])[]; returnType: string; varArgs?: boolean };
 
 class TypeChecker extends CELVisitor<any> {
     private context: Context;
@@ -22,7 +22,7 @@ class TypeChecker extends CELVisitor<any> {
         split: { args: ['string', 'string'], returnType: 'list<string>' },
         startsWith: { args: ['string', 'string'], returnType: 'bool' },
         upper: { args: ['string'], returnType: 'string' },
-        size: { args: ['string', 'list<any>', 'int'], returnType: 'int' },
+        size: { args: [['string', 'list<any>', 'map']], returnType: 'int' },
         int: { args: ['any'], returnType: 'int' },
         uint: { args: ['any'], returnType: 'int' },
         double: { args: ['any'], returnType: 'float' },
@@ -51,8 +51,7 @@ class TypeChecker extends CELVisitor<any> {
     }
 
     visit = (ctx: any): any => {
-        const result = super.visit(ctx);
-        return result;
+        return super.visit(ctx);
     }
 
     getRuleName = (ctx: any): string => {
@@ -64,28 +63,26 @@ class TypeChecker extends CELVisitor<any> {
     }
 
     visitExpr = (ctx: any): any => {
-        const child = this.visit(ctx.getChild(0));
-        return normalizeType(child);
-    }
+        return this.visit(ctx.getChild(0));
+    };
+
+
+
 
     visitIdentOrGlobalCall = (ctx: any): any => {
-        const idToken = ctx.IDENTIFIER();
-        let id = idToken.getText();
+        const id = ctx.getChild(0).getText();
 
-        if (ctx.IDENTIFIER().length > 1) {
-            let baseId = id;
-            for (let i = 1; i < ctx.IDENTIFIER().length; i++) {
-                const field = ctx.IDENTIFIER(i).getText();
-                baseId += `.${field}`;
+        if (ctx.children.length === 1) {
+            const variableValue: any = this.context.getVariable(id);
+            if (variableValue !== undefined) {
+                return getType(variableValue);
             }
-            id = baseId;
-        }
+            throw new Error(`Variable '${id}' is not defined`);
+        } else if (ctx.getChildCount() >= 3 && ctx.getChild(1).getText() === '(') {
+            const args: any[] = this.visit(ctx.exprList());
+            const flattenedArgs = args.filter(value => value !== undefined && value !== null && value !== '');
 
-        if (ctx.getChildCount() >= 3 && ctx.getChild(1).getText() === '(') {
-            const args = ctx.exprList().expr().map((exprCtx: any) => this.visit(exprCtx));
-            const flattenedArgs = args.map((arg: any) => normalizeType(arg));
-
-            const signature = this.functionSignatures[id as keyof typeof this.functionSignatures];
+            const signature = this.functionSignatures[id];
 
             if (!signature) {
                 throw new Error(`Function '${id}' is not defined`);
@@ -150,6 +147,29 @@ class TypeChecker extends CELVisitor<any> {
 
     visitCalcAddSub = (ctx: any): string => {
         let leftType = this.visit(ctx.getChild(0));
+        leftType = normalizeType(leftType);
+
+        for (let i = 1; i < ctx.getChildCount(); i += 2) {
+            const operator = ctx.getChild(i).getText();
+            let rightType = this.visit(ctx.getChild(i + 1));
+            rightType = normalizeType(rightType);
+
+            const operators: string[] = ['+', '-'];
+            const possibleTypesAdd: string[] = ['int', 'float', 'string'];
+            const possibleTypesSub: string[] = ['int', 'float'];
+            if(!operators.includes(operator)) {
+                throw new Error(`Unknown operator '${operator}'`);
+            }
+            if((leftType !== rightType) || (operator === '+' && !possibleTypesAdd.includes(leftType)) || (operator === '-' && !possibleTypesSub.includes(leftType))) {
+                throw new Error(`Operator '${operator}' requires matching types, but got '${leftType}' and '${rightType}'`);
+            }
+        }
+
+        return leftType;
+    };
+
+    visitCalcMulDiv = (ctx: any): string => {
+        let leftType = this.visit(ctx.getChild(0));
 
         for (let i = 1; i < ctx.getChildCount(); i += 2) {
             const operator = ctx.getChild(i).getText();
@@ -158,40 +178,22 @@ class TypeChecker extends CELVisitor<any> {
             leftType = normalizeType(leftType);
             rightType = normalizeType(rightType);
 
-            if (operator === '+' || operator === '-') {
-                if ((leftType === 'int' || leftType === 'float') && (rightType === 'int' || rightType === 'float')) {
-                    leftType = leftType === 'float' || rightType === 'float' ? 'float' : 'int';
-                } else {
-                    throw new Error(`Operator '${operator}' requires numeric types, but got '${leftType}' and '${rightType}'`);
-                }
-            } else {
+            const operators: string[] = ['*', '/', '%'];
+            const possibleCalcMulDivTypes: string[] = ['int', 'float'];
+            if(!operators.includes(operator)) {
                 throw new Error(`Unknown operator '${operator}'`);
+            }
+            if((leftType !== rightType) || (!possibleCalcMulDivTypes.includes(leftType))) {
+                throw new Error(`Operator '${operator}' requires matching numeric operands, but got '${leftType}' and '${rightType}'`);
             }
         }
 
         return leftType;
     };
 
-
-    visitCalcMulDiv = (ctx: any): string => {
-        let leftType = this.visit(ctx.getChild(0));
-
-        for (let i = 1; i < ctx.getChildCount(); i += 2) {
-            const operator = ctx.getChild(i).getText();
-            const rightType = this.visit(ctx.getChild(i + 1));
-
-            if (['*', '/', '%'].includes(operator) && (leftType === 'int' || leftType === 'float')) {
-                leftType = leftType === 'float' || rightType === 'float' ? 'float' : 'int';
-            } else {
-                throw new Error(`Operator '${operator}' requires numeric operands, but got '${leftType}' and '${rightType}'`);
-            }
-        }
-
-        return leftType;
-    }
-
     visitLogicalNot = (ctx: any): string => {
-        const exprType = this.visit(ctx.getChild(1));
+        let exprType = this.visit(ctx.getChild(1));
+        exprType = normalizeType(exprType);
         if (exprType !== 'bool') {
             throw new Error(`Logical '!' requires boolean operand, but got '${exprType}'`);
         }
@@ -200,10 +202,10 @@ class TypeChecker extends CELVisitor<any> {
 
     visitConditionalAnd = (ctx: any): string => {
         let resultType = this.visit(ctx.getChild(0));
-
+        resultType = normalizeType(resultType);
         for (let i = 1; i < ctx.getChildCount(); i += 2) {
-            const nextExprType = this.visit(ctx.getChild(i + 1));
-
+            let nextExprType = this.visit(ctx.getChild(i + 1));
+            nextExprType = normalizeType(nextExprType);
             if (resultType !== 'bool' || nextExprType !== 'bool') {
                 throw new Error(`Logical '&&' requires boolean operands, but got '${resultType}' and '${nextExprType}'`);
             }
@@ -216,10 +218,10 @@ class TypeChecker extends CELVisitor<any> {
 
     visitConditionalOr = (ctx: any): string => {
         let resultType = this.visit(ctx.getChild(0));
-
+        resultType = normalizeType(resultType);
         for (let i = 1; i < ctx.getChildCount(); i += 2) {
-            const nextExprType = this.visit(ctx.getChild(i + 1));
-
+            let nextExprType = this.visit(ctx.getChild(i + 1));
+            nextExprType = normalizeType(nextExprType);
             if (resultType !== 'bool' || nextExprType !== 'bool') {
                 throw new Error(`Logical '||' requires boolean operands, but got '${resultType}' and '${nextExprType}'`);
             }
@@ -232,58 +234,136 @@ class TypeChecker extends CELVisitor<any> {
 
     visitPrimaryExpr = (ctx: any): string => {
         if (ctx.getChildCount() === 1) {
-            const result = this.visit(ctx.getChild(0));
-            return result;
+            return this.visit(ctx.getChild(0));
         } else if (ctx.getChildCount() === 3 && ctx.getChild(0).getText() === '(') {
-            const result = this.visit(ctx.getChild(1));
-            return result;
+            return this.visit(ctx.getChild(1));
         } else {
             throw new Error('Invalid primary expression');
         }
     }
 
     visitConstantLiteral = (ctx: any): string => {
-        const text = ctx.getText();
-        if (!isNaN(Number(text))) {
-            if (text.includes('.')) {
-                return 'float';
-            } else {
-                return 'int';
+        return this.visit(ctx.getChild(0));
+    };
+
+    visitInt = (ctx: any): string => {
+        return 'int';
+    };
+
+    visitDouble = (ctx: any): string => {
+        return 'float';
+    };
+
+    visitString = (ctx: any): string => {
+        return 'string';
+    };
+
+    visitBoolTrue = (ctx: any): string => {
+        return 'bool';
+    };
+
+    visitBoolFalse = (ctx: any): string => {
+        return 'bool';
+    };
+
+    visitNull = (ctx: any): string => {
+        return 'null';
+    };
+
+
+    visitRelationOp = (ctx: any): string => {
+        const leftType = this.visit(ctx.getChild(0));
+        const operator = ctx.getChild(1).getText();
+        const rightType = this.visit(ctx.getChild(2));
+
+        const normalizedLeftType = normalizeType(leftType);
+        const normalizedRightType = normalizeType(rightType);
+
+        if (operator === '==' || operator === '!=') {
+            if (normalizedLeftType !== normalizedRightType) {
+                throw new Error(`Mismatching types: Cannot compare '${normalizedLeftType}' and '${normalizedRightType}' with '${operator}'`);
             }
+        } else if (['<', '<=', '>', '>='].includes(operator)) {
+            if ((normalizedLeftType === 'int' || normalizedLeftType === 'float') && (normalizedRightType === 'int' || normalizedRightType === 'float')) {
+            } else {
+                throw new Error(`Operator '${operator}' requires numeric operands, but got '${normalizedLeftType}' and '${normalizedRightType}'`);
+            }
+        } else if (operator === 'in') {
+        } else {
+            throw new Error(`Unknown operator '${operator}'`);
         }
 
-        if (text === 'true' || text === 'false') {
-            return 'bool';
-        }
+        return 'bool';
+    };
 
-        if ((text.startsWith('"') || text.startsWith("'")) && (text.endsWith('"') || text.endsWith("'"))) {
-            return 'string';
+    visitExprList = (ctx: any): string[] => {
+        const types = [];
+        for (let i = 0; i < ctx.getChildCount(); i += 2) { // assuming commas are every second child
+            const type = this.visit(ctx.getChild(i));
+            types.push(type);
         }
+        return types;
+    };
 
-        if (text.startsWith('timestamp(') && text.endsWith(')')) {
-            return 'timestamp';
-        }
 
-        if (text.startsWith('[') && text.endsWith(']')) {
-            return 'list';
-        }
 
-        return text;
-    }
 }
 
-const  normalizeType= (input: any): string => {
-    if (typeof input === 'string') {
-        return input;
-    } else if (Array.isArray(input)) {
-        const flatArray = input.flat(Infinity);
-        if (flatArray.length === 1) {
-            return String(flatArray[0]);
+const getType = (value: any): string => {
+    if (value === null) {
+        return 'null';
+    }
+
+    if (Array.isArray(value)) {
+        const elementTypes = [...new Set(value.map(getType))];
+        if (elementTypes.length === 1) {
+            return `list<${elementTypes[0]}>`;
+        } else {
+            return 'list<any>';
         }
-        return flatArray.map(String).join(',');
+    }
+
+    if (typeof value === 'number') {
+        return Number.isInteger(value) ? 'int' : 'float';
+    }
+
+    if (typeof value === 'boolean') {
+        return 'bool';
+    }
+
+    if (typeof value === 'string') {
+        return 'string';
+    }
+
+    if (value instanceof Date) {
+        return 'timestamp';
+    }
+
+    if (typeof value === 'object') {
+        return 'map';
+    }
+
+    throw new Error(`Unsupported type: ${typeof value}`);
+};
+
+
+const normalizeType = (input: any): string => {
+    if (typeof input === 'string') {
+        return input.trim();
+    } else if (Array.isArray(input)) {
+        const flatArray = input.flat(Infinity)
+            .filter(value => value !== undefined && value !== null && value !== '');
+        const uniqueTypes = [...new Set(flatArray)];
+        if (uniqueTypes.length === 1) {
+            return uniqueTypes[0];
+        } else if (uniqueTypes.length === 0) {
+            return 'unknown';
+        } else {
+            return 'unknown';
+        }
     } else {
         throw new Error(`Unsupported input type: ${typeof input}`);
     }
-}
+};
 
 export default TypeChecker;
