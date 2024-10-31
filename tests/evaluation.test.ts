@@ -32,6 +32,12 @@ describe('CEL Evaluation Tests', () => {
         expect(() => runtime.evaluate(expression)).toThrow('Mismatching types: Cannot compare \'int\' and \'string\' with \'==\'');
     });
 
+    it('Should return error when a comparison has a type mismatch string and boolean', () => {
+        const expression = "'2' == true";
+        const runtime = new Runtime(expression);
+        expect(() => runtime.evaluate(expression)).toThrow('Mismatching types: Cannot compare \'string\' and \'bool\' with \'==\'');
+    });
+
     it('Should return error when multiplying with int and a float', () => {
         const expression = "33 * 33.3";
         const runtime = new Runtime(expression);
