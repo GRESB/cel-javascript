@@ -1,40 +1,40 @@
-// Generated from src/grammar/CEL.g4 by ANTLR 4.13.0
+// Generated from src/grammar/CEL.g4 by ANTLR 4.13.2
 
 import {ParseTreeVisitor} from 'antlr4';
 
 
-import { StartContext } from "./CELParser";
-import { ExprContext } from "./CELParser";
-import { ConditionalOrContext } from "./CELParser";
-import { ConditionalAndContext } from "./CELParser";
-import { RelationOpContext } from "./CELParser";
-import { RelationCalcContext } from "./CELParser";
-import { CalcMulDivContext } from "./CELParser";
-import { CalcUnaryContext } from "./CELParser";
-import { CalcAddSubContext } from "./CELParser";
-import { MemberExprContext } from "./CELParser";
-import { LogicalNotContext } from "./CELParser";
-import { NegateContext } from "./CELParser";
-import { SelectOrCallContext } from "./CELParser";
-import { PrimaryExprContext } from "./CELParser";
-import { IndexContext } from "./CELParser";
-import { CreateMessageContext } from "./CELParser";
-import { IdentOrGlobalCallContext } from "./CELParser";
-import { NestedContext } from "./CELParser";
-import { CreateListContext } from "./CELParser";
-import { CreateStructContext } from "./CELParser";
-import { ConstantLiteralContext } from "./CELParser";
-import { ExprListContext } from "./CELParser";
-import { FieldInitializerListContext } from "./CELParser";
-import { MapInitializerListContext } from "./CELParser";
-import { IntContext } from "./CELParser";
-import { UintContext } from "./CELParser";
-import { DoubleContext } from "./CELParser";
-import { StringContext } from "./CELParser";
-import { BytesContext } from "./CELParser";
-import { BoolTrueContext } from "./CELParser";
-import { BoolFalseContext } from "./CELParser";
-import { NullContext } from "./CELParser";
+import { StartContext } from "./CELParser.js";
+import { ExprContext } from "./CELParser.js";
+import { ConditionalOrContext } from "./CELParser.js";
+import { ConditionalAndContext } from "./CELParser.js";
+import { RelationOpContext } from "./CELParser.js";
+import { RelationCalcContext } from "./CELParser.js";
+import { CalcMulDivContext } from "./CELParser.js";
+import { CalcUnaryContext } from "./CELParser.js";
+import { CalcAddSubContext } from "./CELParser.js";
+import { MemberExprContext } from "./CELParser.js";
+import { LogicalNotContext } from "./CELParser.js";
+import { NegateContext } from "./CELParser.js";
+import { SelectOrCallContext } from "./CELParser.js";
+import { PrimaryExprContext } from "./CELParser.js";
+import { IndexContext } from "./CELParser.js";
+import { CreateMessageContext } from "./CELParser.js";
+import { IdentOrGlobalCallContext } from "./CELParser.js";
+import { NestedContext } from "./CELParser.js";
+import { CreateListContext } from "./CELParser.js";
+import { CreateStructContext } from "./CELParser.js";
+import { ConstantLiteralContext } from "./CELParser.js";
+import { ExprListContext } from "./CELParser.js";
+import { FieldInitializerListContext } from "./CELParser.js";
+import { MapInitializerListContext } from "./CELParser.js";
+import { IntContext } from "./CELParser.js";
+import { UintContext } from "./CELParser.js";
+import { DoubleContext } from "./CELParser.js";
+import { StringContext } from "./CELParser.js";
+import { BytesContext } from "./CELParser.js";
+import { BoolTrueContext } from "./CELParser.js";
+import { BoolFalseContext } from "./CELParser.js";
+import { NullContext } from "./CELParser.js";
 
 
 /**
