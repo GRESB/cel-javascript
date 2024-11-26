@@ -202,4 +202,23 @@ describe('CEL Evaluation Tests', () => {
         const runtime = new Runtime(expression);
         expect(() => runtime.evaluate({})).toThrow('Mismatching types: Cannot compare \'int\' and \'float\' with \'<=\'');
     });
+
+    it('should return expected result in comparison of object properties', () => {
+        const expression = 'user.age >= 18';
+        const contextData = {
+            user: {
+                name: 'Alice',
+                age: 20,
+            },
+        };
+        const types = {
+            user: {
+                name: 'string',
+                age: 'int',
+            },
+        };
+        const runtime = new Runtime(expression);
+        const result = runtime.evaluate(contextData, types);
+        expect(result).toBe(true);
+    });
 });

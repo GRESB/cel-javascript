@@ -59,11 +59,17 @@ export class Runtime {
         }
     }
     
-    static typeCheck(expression: string, typesContext: { [key: string]: any }): { success: boolean; error?: string } {
+    static typeCheck(expression: string, context?: any, types?: any): { success: boolean; error?: string } {
         const runtime: Runtime = new Runtime(expression);
         if (runtime.ast !== null) {
             try {
-                const typeChecker: TypeChecker = new TypeChecker(new Context(typesContext));
+                let contextObj: Context;
+                if (context instanceof Context) {
+                    contextObj = context;
+                } else {
+                    contextObj = new Context(context || {}, types || {});
+                }
+                const typeChecker: TypeChecker = new TypeChecker(contextObj);
                 typeChecker.visit(runtime.ast);
                 return { success: true };
             } catch (error) {
@@ -72,16 +78,16 @@ export class Runtime {
         } else {
             return { success: false, error: 'Parsing failed with errors' };
         }
-    }
+    }    
 
 
 
-    evaluate(context: any) {
+    evaluate(context: any, types?: any) {
         if (!this.ast) {
             throw new Error('AST is not available. Parsing might have failed.');
         }
-        const contextObj: Context = new Context(context);
-        const typeCheckResult = Runtime.typeCheck(this.celExpression, context);
+        const contextObj: Context = new Context(context, types);
+        const typeCheckResult = Runtime.typeCheck(this.celExpression, contextObj);
         if(typeCheckResult.success) {
             const evaluator: Evaluator = new Evaluator(contextObj);
             return evaluator.visit(this.ast);
