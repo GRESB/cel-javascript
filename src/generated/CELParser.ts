@@ -1,4 +1,4 @@
-// Generated from src/grammar/CEL.g4 by ANTLR 4.13.0
+// Generated from src/grammar/CEL.g4 by ANTLR 4.13.2
 // noinspection ES6UnusedImports,JSUnusedGlobalSymbols,JSUnusedLocalSymbols
 
 import {
@@ -55,7 +55,7 @@ export default class CELParser extends Parser {
 	public static readonly STRING = 34;
 	public static readonly BYTES = 35;
 	public static readonly IDENTIFIER = 36;
-	public static readonly EOF = Token.EOF;
+	public static override readonly EOF = Token.EOF;
 	public static readonly RULE_start = 0;
 	public static readonly RULE_expr = 1;
 	public static readonly RULE_conditionalOr = 2;
@@ -1449,7 +1449,7 @@ export class RelationContext extends ParserRuleContext {
     public get ruleIndex(): number {
     	return CELParser.RULE_relation;
 	}
-	public copyFrom(ctx: RelationContext): void {
+	public override copyFrom(ctx: RelationContext): void {
 		super.copyFrom(ctx);
 	}
 }
@@ -1542,7 +1542,7 @@ export class CalcContext extends ParserRuleContext {
     public get ruleIndex(): number {
     	return CELParser.RULE_calc;
 	}
-	public copyFrom(ctx: CalcContext): void {
+	public override copyFrom(ctx: CalcContext): void {
 		super.copyFrom(ctx);
 	}
 }
@@ -1660,7 +1660,7 @@ export class UnaryContext extends ParserRuleContext {
     public get ruleIndex(): number {
     	return CELParser.RULE_unary;
 	}
-	public copyFrom(ctx: UnaryContext): void {
+	public override copyFrom(ctx: UnaryContext): void {
 		super.copyFrom(ctx);
 	}
 }
@@ -1771,7 +1771,7 @@ export class MemberContext extends ParserRuleContext {
     public get ruleIndex(): number {
     	return CELParser.RULE_member;
 	}
-	public copyFrom(ctx: MemberContext): void {
+	public override copyFrom(ctx: MemberContext): void {
 		super.copyFrom(ctx);
 	}
 }
@@ -1937,7 +1937,7 @@ export class PrimaryContext extends ParserRuleContext {
     public get ruleIndex(): number {
     	return CELParser.RULE_primary;
 	}
-	public copyFrom(ctx: PrimaryContext): void {
+	public override copyFrom(ctx: PrimaryContext): void {
 		super.copyFrom(ctx);
 	}
 }
@@ -2285,7 +2285,7 @@ export class LiteralContext extends ParserRuleContext {
     public get ruleIndex(): number {
     	return CELParser.RULE_literal;
 	}
-	public copyFrom(ctx: LiteralContext): void {
+	public override copyFrom(ctx: LiteralContext): void {
 		super.copyFrom(ctx);
 	}
 }
