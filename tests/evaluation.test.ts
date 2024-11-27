@@ -26,6 +26,19 @@ describe('CEL Evaluation Tests', () => {
         expect(result).toBe(true);
     });
 
+    it('should work with the readme example', () => {
+        const expression = "user.age >= 18";
+        const context = {
+            user: {
+                name: 'Alice',
+                age: 20,
+            },
+        };
+        const runtime = new Runtime(expression);
+        const result = runtime.evaluate(context);
+        expect(result).toBe(true);
+    });
+
     it('Should return error when a comparison has a type mismatch', () => {
         const expression = "2 == '2'";
         const runtime = new Runtime(expression);
@@ -201,24 +214,5 @@ describe('CEL Evaluation Tests', () => {
         const expression = "1 <= 2.3";
         const runtime = new Runtime(expression);
         expect(() => runtime.evaluate({})).toThrow('Mismatching types: Cannot compare \'int\' and \'float\' with \'<=\'');
-    });
-
-    it('should return expected result in comparison of object properties', () => {
-        const expression = 'user.age >= 18';
-        const contextData = {
-            user: {
-                name: 'Alice',
-                age: 20,
-            },
-        };
-        const types = {
-            user: {
-                name: 'string',
-                age: 'int',
-            },
-        };
-        const runtime = new Runtime(expression);
-        const result = runtime.evaluate(contextData, types);
-        expect(result).toBe(true);
     });
 });

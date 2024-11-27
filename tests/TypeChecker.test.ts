@@ -80,6 +80,32 @@ describe('TypeChecker Tests using Runtime', () => {
     expect(typeCheckResult.error).toContain("Argument 1 of function 'max' expects type 'int', but got 'string'");
   });
 
+  it('should be valid as the example of the readme', () => {
+    const expression = "user.age >= 18";
+    const context = {
+      user: {
+        name: 'Alice',
+        age: 20,
+      },
+    };
+    const typeCheckResult = Runtime.typeCheck(expression, context);
+    expect(typeCheckResult.success).toBe(true);
+  });
+
+  it('should be valid when we have multiple nested objects', () => {
+    const expression = "user.age.really >= 18";
+    const context = {
+      user: {
+        name: 'Alice',
+        age: {
+          really: 20
+        },
+      },
+    };
+    const typeCheckResult = Runtime.typeCheck(expression, context);
+    expect(typeCheckResult.success).toBe(true);
+  });
+
   it('should return correct type for logical NOT expression', () => {
     const expression = "!true";
     const typeCheckResult = Runtime.typeCheck(expression, {});
