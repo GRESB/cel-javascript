@@ -122,7 +122,7 @@ class TypeChecker extends CELVisitor<any> {
             if (varType === undefined) {
                 const variableValue = this.context.getVariable(id);
                 if (variableValue !== undefined) {
-                    varType = getType(variableValue);
+                    varType = getType(variableValue) as any;
                     this.context.setType(id, varType);  
                 } else {
                     throw new Error(`Variable '${id}' is not defined`);
