@@ -26,6 +26,19 @@ describe('CEL Evaluation Tests', () => {
         expect(result).toBe(true);
     });
 
+    it('should work with the readme example', () => {
+        const expression = "user.age >= 18";
+        const context = {
+            user: {
+                name: 'Alice',
+                age: 20,
+            },
+        };
+        const runtime = new Runtime(expression);
+        const result = runtime.evaluate(context);
+        expect(result).toBe(true);
+    });
+
     it('Should return error when a comparison has a type mismatch', () => {
         const expression = "2 == '2'";
         const runtime = new Runtime(expression);

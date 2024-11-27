@@ -47,6 +47,9 @@ class TypeChecker extends CELVisitor<any> {
 
     constructor(context: Context) {
         super();
+        if (!(context instanceof Context)) {
+            throw new Error('TypeChecker requires a Context object');
+        }
         this.context = context;
     }
 
@@ -65,19 +68,67 @@ class TypeChecker extends CELVisitor<any> {
     visitExpr = (ctx: any): any => {
         return this.visit(ctx.getChild(0));
     };
+    
+    visitSelectOrCall = (ctx: any): string => {
+        const objectType = this.visit(ctx.getChild(0));
+        const memberName = ctx.getChild(2).getText();
+        
+        if (objectType && typeof objectType === 'object' && memberName in objectType) {
+            return objectType[memberName];
+        } else {
+            
+            const objectName = ctx.getChild(0).getText();
+            const objectValue = this.context.getVariable(objectName);
+            if (objectValue && typeof objectValue === 'object' && memberName in objectValue) {
+                const memberValue = objectValue[memberName];
+                const memberType = getType(memberValue);
+                return memberType;
+            } else {
+                throw new Error(`Cannot access property '${memberName}' on object '${objectName}'`);
+            }
+        }
+    };
 
+    
+    resolveObjectValue = (node: any): any => {
+        const ruleName = node.constructor.name;
 
+        if (ruleName === 'IdentOrGlobalCallContext') {
+            const id = node.getText();
+            const variableValue = this.context.getVariable(id);
+            if (variableValue === undefined) {
+                throw new Error(`Variable '${id}' is not defined`);
+            }
+            return variableValue;
+        } else if (ruleName === 'SelectOrCallContext') {
+            const objectValue = this.resolveObjectValue(node.getChild(0));
+            const memberName = node.getChild(2).getText();
+            if (objectValue && typeof objectValue === 'object' && memberName in objectValue) {
+                return objectValue[memberName];
+            } else {
+                throw new Error(`Property '${memberName}' does not exist on object`);
+            }
+        } else {
+            throw new Error(`Cannot resolve value of node type '${ruleName}'`);
+        }
+    };
 
 
     visitIdentOrGlobalCall = (ctx: any): any => {
         const id = ctx.getChild(0).getText();
-
+        
         if (ctx.children.length === 1) {
-            const variableValue: any = this.context.getVariable(id);
-            if (variableValue !== undefined) {
-                return getType(variableValue);
+            let varType = this.context.getType(id);
+            if (varType === undefined) {
+                const variableValue = this.context.getVariable(id);
+                if (variableValue !== undefined) {
+                    varType = getType(variableValue);
+                    this.context.setType(id, varType);  
+                } else {
+                    throw new Error(`Variable '${id}' is not defined`);
+                }
             }
-            throw new Error(`Variable '${id}' is not defined`);
+            return varType;
         } else if (ctx.getChildCount() >= 3 && ctx.getChild(1).getText() === '(') {
             const args: any[] = this.visit(ctx.exprList());
             const flattenedArgs = args.filter(value => value !== undefined && value !== null && value !== '');
@@ -123,25 +174,7 @@ class TypeChecker extends CELVisitor<any> {
 
             return signature.returnType;
         } else {
-            let varType = this.context.getType(id);
-
-            if (ctx.DOT()) {
-                const fields = id.split('.');
-                fields.shift();
-                for (const field of fields) {
-                    if (varType[field]) {
-                        varType = varType[field];
-                    } else {
-                        throw new Error(`Field '${field}' does not exist on variable '${id}'`);
-                    }
-                }
-            }
-
-            if (!varType) {
-                throw new Error(`Undefined variable: ${id}`);
-            }
-
-            return varType;
+            throw new Error('Invalid identifier or function call');
         }
     }
 
