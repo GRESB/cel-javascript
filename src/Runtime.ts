@@ -1,4 +1,4 @@
-import * as antlr4 from 'antlr4';
+import antlr4 from 'antlr4';
 import CELLexer from './generated/CELLexer.js';
 import CELParser from './generated/CELParser.js';
 import Evaluator from './Evaluator';
