@@ -17,8 +17,8 @@ export class Runtime {
     }> = [];
 
     constructor(celExpression: string) {
-        //const chars = new antlr4.InputStream(celExpression);
-        //        const lexer = new CELLexer(chars);
+        // const chars = new antlr4.InputStream(celExpression);
+        // const lexer = new CELLexer(chars);
         this.celExpression = celExpression;
         const chars = antlr4.CharStreams.fromString(celExpression);
         const lexer = new CELLexer(chars);
@@ -80,8 +80,6 @@ export class Runtime {
         }
     }    
 
-
-
     evaluate(context: any, types?: any) {
         if (!this.ast) {
             throw new Error('AST is not available. Parsing might have failed.');
@@ -95,5 +93,4 @@ export class Runtime {
             throw new Error(typeCheckResult.error);
         }
     }
-    
 }
