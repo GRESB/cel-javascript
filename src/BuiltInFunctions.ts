@@ -90,4 +90,5 @@ export const builtInFunctions = {
   getHours: (date: Date) => date.getUTCHours(),
   getMinutes: (date: Date) => date.getUTCMinutes(),
   getSeconds: (date: Date) => date.getUTCSeconds(),
+  compareDates: (date1: Date, date2: Date): number => date1.getTime() - date2.getTime(),
 };

@@ -216,3 +216,28 @@ describe('CEL Evaluation Tests', () => {
         expect(() => runtime.evaluate({})).toThrow('Mismatching types: Cannot compare \'int\' and \'float\' with \'<=\'');
     });
 });
+
+describe('timestamp function with comparison operators', () => {
+    let runtime: Runtime;
+
+    it('should evaluate value == timestamp with full ISO format', () => {
+        const expression = "value == timestamp('2025-01-01T00:00:00Z')";
+        runtime = new Runtime(expression);
+        const result = runtime.evaluate({ value: new Date('2025-01-01T00:00:00Z') });
+        expect(result).toBe(true);
+    });
+
+    it('should evaluate value == timestamp with date-only format', () => {
+        const expression = "value == timestamp('2025-01-01')";
+        runtime = new Runtime(expression);
+        const result = runtime.evaluate({ value: new Date('2025-01-01T00:00:00Z') });
+        expect(result).toBe(true);
+    });
+
+    it('should evaluate value == timestamp with mismatched time', () => {
+        const expression = "value == timestamp('2025-01-01')";
+        runtime = new Runtime(expression);
+        const result = runtime.evaluate({ value: new Date('2025-01-01T12:00:00Z') });
+        expect(result).toBe(false); // Time mismatch
+    });
+});

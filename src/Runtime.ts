@@ -94,3 +94,59 @@ export class Runtime {
         }
     }
 }
+export function evaluateComparison(operator: string, left: any, right: any): boolean {
+    console.log(`Comparing: ${left} (${typeof left}) ${operator} ${right} (${typeof right})`);
+
+    // Convert timestamp strings or other formats to Date objects if necessary
+    if (typeof left === 'string' && !isNaN(Date.parse(left))) {
+        left = new Date(left);
+    }
+    if (typeof right === 'string' && !isNaN(Date.parse(right))) {
+        right = new Date(right);
+    }
+
+    console.log(`After conversion: ${left} (${left instanceof Date ? 'Date' : typeof left}) ${operator} ${right} (${right instanceof Date ? 'Date' : typeof right})`);
+
+    // Handle Date objects
+    if (left instanceof Date && right instanceof Date) {
+        const comparison = left.getTime() - right.getTime();
+        switch (operator) {
+            case '<=':
+                return comparison <= 0;
+            case '<':
+                return comparison < 0;
+            case '>=':
+                return comparison >= 0;
+            case '>':
+                return comparison > 0;
+            case '==':
+                return comparison === 0;
+            case '!=':
+                return comparison !== 0;
+            default:
+                throw new Error(`Unsupported operator: ${operator}`);
+        }
+    }
+
+    // Fallback for numeric or other types
+    if (typeof left === 'number' && typeof right === 'number') {
+        switch (operator) {
+            case '<=':
+                return left <= right;
+            case '<':
+                return left < right;
+            case '>=':
+                return left >= right;
+            case '>':
+                return left > right;
+            case '==':
+                return left === right;
+            case '!=':
+                return left !== right;
+            default:
+                throw new Error(`Unsupported operator: ${operator}`);
+        }
+    }
+
+    throw new Error(`Operator '${operator}' requires numeric or timestamp operands, but got '${typeof left}' and '${typeof right}'`);
+}

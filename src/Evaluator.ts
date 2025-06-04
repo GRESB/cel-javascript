@@ -1,6 +1,7 @@
 import CELVisitor from './generated/CELVisitor';
 import { builtInFunctions } from './BuiltInFunctions';
 import Context from './Context';
+import { evaluateComparison } from './Runtime';
 
 export class Evaluator extends CELVisitor<any> {
   private context: Context;
@@ -54,25 +55,12 @@ export class Evaluator extends CELVisitor<any> {
   };
 
   visitRelationOp = (ctx: any) => {
-    const left = this.visit(ctx.getChild(0));
-    const operator = ctx.getChild(1).getText();
-    const right = this.visit(ctx.getChild(2));
-    switch (operator) {
-      case '==':
-        return left === right;
-      case '!=':
-        return left !== right;
-      case '<':
-        return left < right;
-      case '<=':
-        return left <= right;
-      case '>':
-        return left > right;
-      case '>=':
-        return left >= right;
-      default:
-        throw new Error(`Unknown operator: ${operator}`);
-    }
+    const left = this.visit(ctx.getChild(0)); // Evaluate the left operand
+    const operator = ctx.getChild(1).getText(); // Get the operator (e.g., '<=')
+    const right = this.visit(ctx.getChild(2)); // Evaluate the right operand
+
+    // Delegate the comparison logic to evaluateComparison
+    return evaluateComparison(operator, left, right);
   };
 
   visitRelationCalc = (ctx: any) => {
