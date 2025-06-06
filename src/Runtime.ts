@@ -95,17 +95,28 @@ export class Runtime {
     }
 }
 export function evaluateComparison(operator: string, left: any, right: any): boolean {
-    console.log(`Comparing: ${left} (${typeof left}) ${operator} ${right} (${typeof right})`);
 
-    // Convert timestamp strings or other formats to Date objects if necessary
-    if (typeof left === 'string' && !isNaN(Date.parse(left))) {
+    function isValidTimestampString(str: string): boolean {
+        // Accepts ISO 8601 date or datetime strings
+        const parsed = Date.parse(str);
+        if (isNaN(parsed)) return false;
+        // Check if the parsed date's ISO string starts with the input (date or datetime)
+        const d = new Date(parsed);
+        const iso = d.toISOString();
+        // Accepts date-only (YYYY-MM-DD) or full ISO
+        return (
+            str.length === 10 && iso.startsWith(str) ||
+            iso.startsWith(str)
+        );
+    }
+
+    // Convert timestamp strings to Date objects if necessary
+    if (typeof left === 'string' && isValidTimestampString(left)) {
         left = new Date(left);
     }
-    if (typeof right === 'string' && !isNaN(Date.parse(right))) {
+    if (typeof right === 'string' && isValidTimestampString(right)) {
         right = new Date(right);
     }
-
-    console.log(`After conversion: ${left} (${left instanceof Date ? 'Date' : typeof left}) ${operator} ${right} (${right instanceof Date ? 'Date' : typeof right})`);
 
     // Handle Date objects
     if (left instanceof Date && right instanceof Date) {
@@ -148,5 +159,5 @@ export function evaluateComparison(operator: string, left: any, right: any): boo
         }
     }
 
-    throw new Error(`Operator '${operator}' requires numeric or timestamp operands, but got '${typeof left}' and '${typeof right}'`);
+    throw new Error(`Operator '${operator}' requires operands of the same type (numeric or timestamp), but got '${typeof left}' and '${typeof right}'. Supported types: number, Date`);
 }
