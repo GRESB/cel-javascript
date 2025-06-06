@@ -320,8 +320,15 @@ class TypeChecker extends CELVisitor<any> {
             if (normalizedLeftType !== normalizedRightType) {
                 throw new Error(`Mismatching types: Cannot compare '${normalizedLeftType}' and '${normalizedRightType}' with '${operator}'`);
             }
-            if(!(normalizedLeftType === 'int' || normalizedLeftType === 'float')) {
-                throw new Error(`Operator '${operator}' requires numeric operands, but got '${normalizedLeftType}' and '${normalizedRightType}'`);
+            // Allow int, float, or timestamp for relational operators
+            if (
+                !(
+                    normalizedLeftType === 'int' ||
+                    normalizedLeftType === 'float' ||
+                    normalizedLeftType === 'timestamp'
+                )
+            ) {
+                throw new Error(`Operator '${operator}' requires numeric or timestamp operands, but got '${normalizedLeftType}' and '${normalizedRightType}'`);
             }
         } else if (operator === 'in') {
         } else {

@@ -218,26 +218,67 @@ describe('CEL Evaluation Tests', () => {
 });
 
 describe('timestamp function with comparison operators', () => {
-    let runtime: Runtime;
+    it('should evaluate value <= timestamp with full ISO format', () => {
+        const expression = "value <= timestamp('2025-01-01T00:00:00Z')";
+        const context = { value: new Date('2025-01-01T00:00:00Z') };
+        const runtime = new Runtime(expression);
+        const result = runtime.evaluate(context);
+        expect(result).toBe(true);
+    });
+
+    it('should evaluate value < timestamp with full ISO format', () => {
+        const expression = "value < timestamp('2025-01-01T00:00:00Z')";
+        const context = { value: new Date('2024-12-31T23:59:59Z') };
+        const runtime = new Runtime(expression);
+        const result = runtime.evaluate(context);
+        expect(result).toBe(true);
+    });
+
+    it('should evaluate value > timestamp with full ISO format', () => {
+        const expression = "value > timestamp('2025-01-01T00:00:00Z')";
+        const context = { value: new Date('2025-01-02T00:00:00Z') };
+        const runtime = new Runtime(expression);
+        const result = runtime.evaluate(context);
+        expect(result).toBe(true);
+    });
 
     it('should evaluate value == timestamp with full ISO format', () => {
         const expression = "value == timestamp('2025-01-01T00:00:00Z')";
-        runtime = new Runtime(expression);
-        const result = runtime.evaluate({ value: new Date('2025-01-01T00:00:00Z') });
+        const context = { value: new Date('2025-01-01T00:00:00Z') };
+        const runtime = new Runtime(expression);
+        const result = runtime.evaluate(context);
         expect(result).toBe(true);
     });
 
     it('should evaluate value == timestamp with date-only format', () => {
         const expression = "value == timestamp('2025-01-01')";
-        runtime = new Runtime(expression);
-        const result = runtime.evaluate({ value: new Date('2025-01-01T00:00:00Z') });
+        const context = { value: new Date('2025-01-01T00:00:00Z') };
+        const runtime = new Runtime(expression);
+        const result = runtime.evaluate(context);
         expect(result).toBe(true);
     });
 
-    it('should evaluate value == timestamp with mismatched time', () => {
-        const expression = "value == timestamp('2025-01-01')";
-        runtime = new Runtime(expression);
-        const result = runtime.evaluate({ value: new Date('2025-01-01T12:00:00Z') });
-        expect(result).toBe(false); // Time mismatch
+    it('should evaluate value != timestamp with mismatched time', () => {
+        const expression = "value != timestamp('2025-01-01')";
+        const context = { value: new Date('2025-01-01T12:00:00Z') }; // Time mismatch
+        const runtime = new Runtime(expression);
+        const result = runtime.evaluate(context);
+        expect(result).toBe(true);
+    });
+
+    it('should evaluate value >= timestamp with full ISO format', () => {
+        const expression = "value >= timestamp('2025-01-01T00:00:00Z')";
+        const context = { value: new Date('2025-01-01T00:00:00Z') };
+        const runtime = new Runtime(expression);
+        const result = runtime.evaluate(context);
+        expect(result).toBe(true);
+    });
+
+    it('should evaluate value <= timestamp with date-only format', () => {
+        const expression = "value <= timestamp('2025-01-01')";
+        const context = { value: new Date('2025-01-01T00:00:00Z') };
+        const runtime = new Runtime(expression);
+        const result = runtime.evaluate(context);
+        expect(result).toBe(true);
     });
 });
