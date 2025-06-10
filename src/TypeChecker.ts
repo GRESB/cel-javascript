@@ -391,11 +391,15 @@ const getType = (value: any): string => {
 
 const normalizeType = (input: any): string => {
     if (typeof input === 'string') {
-        return input.trim();
+        const trimmed = input.trim().toLowerCase();
+        if (trimmed === 'date' || trimmed === 'timestamp') {
+            return 'timestamp';
+        }
+        return trimmed;
     } else if (Array.isArray(input)) {
         const flatArray = input.flat(Infinity)
             .filter(value => value !== undefined && value !== null && value !== '');
-        const uniqueTypes = [...new Set(flatArray)];
+        const uniqueTypes = [...new Set(flatArray.map(t => normalizeType(t)))];
         if (uniqueTypes.length === 1) {
             return uniqueTypes[0];
         } else if (uniqueTypes.length === 0) {
