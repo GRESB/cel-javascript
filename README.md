@@ -213,6 +213,39 @@ Here is a list of supported functions:
 - getSeconds(timestamp): Extracts the seconds from a timestamp.
 
 
+## Timestamp Handling and Relational Operators
+
+**New in v0.0.21:**  
+This release enhances the handling of timestamps and relational operators in the CEL evaluation system:
+
+- **Timestamp Comparisons:**  
+  Expressions can now compare timestamps, including support for date-only formats (e.g., `'2024-06-11'`). The evaluator will automatically convert valid ISO 8601 date or datetime strings to `Date` objects for accurate comparison.
+
+- **Relational Operators:**  
+  Relational operators (`<`, `<=`, `>`, `>=`, `==`, `!=`) now support both numeric and timestamp operands. If both operands are valid timestamps, they are compared as dates. If both are numbers, they are compared numerically. Mixed types will result in an error.
+
+- **Improved Error Messages:**  
+  If an invalid comparison is attempted (e.g. comparing a string to a number), a clear error message is provided.
+
+- **Test Coverage:**  
+  Additional tests have been added to validate timestamp parsing and comparison logic.
+
+**Example:**
+
+```js
+import { Runtime } from '@gresb/cel-javascript';
+
+const celExpression = 'created_at >= "2024-06-01"';
+const context = { created_at: '2024-06-11T10:00:00Z' };
+
+const runtime = new Runtime(celExpression);
+const result = runtime.evaluate(context);
+
+console.log(result); // Output: true
+```
+
+Date-only strings like `"2024-06-11"` are treated as midnight UTC on that date.
+
 ## Deployment
 
 To deploy the package to npm, follow these steps:
