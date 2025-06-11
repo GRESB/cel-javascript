@@ -264,4 +264,36 @@ describe('CEL Built-in Functions', () => {
     const result = runtime.evaluate({ timestamp: new Date(Date.UTC(2024, 7, 2, 12, 0, 0)) });
     expect(result).toBe(expected);
   });
+
+  it('should evaluate timestamp with full ISO format', () => {
+    const expression = "timestamp('2025-01-01T00:00:00Z')";
+    runtime = new Runtime(expression);
+    const result = runtime.evaluate({});
+    expect(result.toISOString()).toBe('2025-01-01T00:00:00.000Z');
+  });
+
+  it('should evaluate timestamp with date-only format', () => {
+    const expression = "timestamp('2025-01-01')";
+    runtime = new Runtime(expression);
+    const result = runtime.evaluate({});
+    expect(result.toISOString()).toBe('2025-01-01T00:00:00.000Z');
+  });
+
+  it('should throw error for invalid timestamp format', () => {
+    const expression = "timestamp('invalid-date')";
+    runtime = new Runtime(expression);
+    expect(() => runtime.evaluate({})).toThrow('Invalid timestamp: invalid-date');
+  });
+
+  it('should throw error for invalid month in timestamp', () => {
+    const expression = "timestamp('2025-13-01')";
+    runtime = new Runtime(expression);
+    expect(() => runtime.evaluate({})).toThrow('Invalid timestamp: 2025-13-01');
+  });
+
+  it('should throw error for invalid day in timestamp', () => {
+    const expression = "timestamp('2025-01-32')";
+    runtime = new Runtime(expression);
+    expect(() => runtime.evaluate({})).toThrow('Invalid timestamp: 2025-01-32');
+  });
 });

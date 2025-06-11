@@ -48,6 +48,13 @@ export const builtInFunctions = {
     return re.test(value);
   },
   timestamp: (value: string) => {
+    // Check if the input matches a date-only format (YYYY-MM-DD)
+    const dateOnlyRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (dateOnlyRegex.test(value)) {
+      // Append time to date-only format and parse as ISO timestamp
+      value = `${value}T00:00:00Z`;
+    }
+
     const date = new Date(value);
     if (isNaN(date.getTime())) {
       throw new Error(`Invalid timestamp: ${value}`);
@@ -83,4 +90,5 @@ export const builtInFunctions = {
   getHours: (date: Date) => date.getUTCHours(),
   getMinutes: (date: Date) => date.getUTCMinutes(),
   getSeconds: (date: Date) => date.getUTCSeconds(),
+  compareDates: (date1: Date, date2: Date): number => date1.getTime() - date2.getTime(),
 };

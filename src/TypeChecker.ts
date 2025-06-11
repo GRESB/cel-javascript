@@ -320,8 +320,15 @@ class TypeChecker extends CELVisitor<any> {
             if (normalizedLeftType !== normalizedRightType) {
                 throw new Error(`Mismatching types: Cannot compare '${normalizedLeftType}' and '${normalizedRightType}' with '${operator}'`);
             }
-            if(!(normalizedLeftType === 'int' || normalizedLeftType === 'float')) {
-                throw new Error(`Operator '${operator}' requires numeric operands, but got '${normalizedLeftType}' and '${normalizedRightType}'`);
+            // Allow int, float, or timestamp for relational operators
+            if (
+                !(
+                    normalizedLeftType === 'int' ||
+                    normalizedLeftType === 'float' ||
+                    normalizedLeftType === 'timestamp'
+                )
+            ) {
+                throw new Error(`Operator '${operator}' requires numeric or timestamp operands, but got '${normalizedLeftType}' and '${normalizedRightType}'`);
             }
         } else if (operator === 'in') {
         } else {
@@ -384,11 +391,15 @@ const getType = (value: any): string => {
 
 const normalizeType = (input: any): string => {
     if (typeof input === 'string') {
-        return input.trim();
+        const trimmed = input.trim().toLowerCase();
+        if (trimmed === 'date' || trimmed === 'timestamp') {
+            return 'timestamp';
+        }
+        return trimmed;
     } else if (Array.isArray(input)) {
         const flatArray = input.flat(Infinity)
             .filter(value => value !== undefined && value !== null && value !== '');
-        const uniqueTypes = [...new Set(flatArray)];
+        const uniqueTypes = [...new Set(flatArray.map(t => normalizeType(t)))];
         if (uniqueTypes.length === 1) {
             return uniqueTypes[0];
         } else if (uniqueTypes.length === 0) {

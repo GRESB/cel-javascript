@@ -169,4 +169,87 @@ it('Should return error when a comparison has a type mismatch', () => {
   expect(typeCheckResult.error).toContain("Mismatching types");
 });
 
+it('should allow <= comparison between two timestamps', () => {
+  const expression = "a <= b";
+  const context = { a: new Date("2025-01-01T00:00:00Z"), b: new Date("2025-01-02T00:00:00Z") };
+  const typeCheckResult = Runtime.typeCheck(expression, context);
+  expect(typeCheckResult.success).toBe(true);
+});
+
+it('should allow >= comparison between two timestamps', () => {
+  const expression = "a >= b";
+  const context = { a: new Date("2025-01-02T00:00:00Z"), b: new Date("2025-01-01T00:00:00Z") };
+  const typeCheckResult = Runtime.typeCheck(expression, context);
+  expect(typeCheckResult.success).toBe(true);
+});
+
+it('should return error when comparing timestamp and int with <=', () => {
+  const expression = "a <= b";
+  const context = { a: new Date("2025-01-01T00:00:00Z"), b: 5 };
+  const typeCheckResult = Runtime.typeCheck(expression, context);
+  expect(typeCheckResult.success).toBe(false);
+  expect(typeCheckResult.error).toContain("Mismatching types");
+});
+
+it('should return error when comparing timestamp and string', () => {
+  const expression = "a <= b";
+  const context = { a: new Date("2025-01-01T00:00:00Z"), b: "2025-01-01" };
+  const typeCheckResult = Runtime.typeCheck(expression, context);
+  expect(typeCheckResult.success).toBe(false);
+  expect(typeCheckResult.error).toContain("Mismatching types");
+});
+
+it('should allow == comparison between two timestamps', () => {
+  const expression = "a == b";
+  const context = { a: new Date("2025-01-01T00:00:00Z"), b: new Date("2025-01-01T00:00:00Z") };
+  const typeCheckResult = Runtime.typeCheck(expression, context);
+  expect(typeCheckResult.success).toBe(true);
+});
+
+it('should return error when comparing timestamp and null', () => {
+  const expression = "a <= b";
+  const context = { a: new Date("2025-01-01T00:00:00Z"), b: null };
+  const typeCheckResult = Runtime.typeCheck(expression, context);
+  expect(typeCheckResult.success).toBe(false);
+});
+
+it('should evaluate a <= b for timestamps as true', () => {
+  const expression = "a <= b";
+  const context = { a: new Date("2025-01-01T00:00:00Z"), b: new Date("2025-01-02T00:00:00Z") };
+  const runtime = new Runtime(expression);
+  const result = runtime.evaluate(context);
+  expect(result).toBe(true);
+});
+
+it('should evaluate a >= b for timestamps as true', () => {
+  const expression = "a >= b";
+  const context = { a: new Date("2025-01-02T00:00:00Z"), b: new Date("2025-01-01T00:00:00Z") };
+  const runtime = new Runtime(expression);
+  const result = runtime.evaluate(context);
+  expect(result).toBe(true);
+});
+
+it('should evaluate a == b for timestamps as true', () => {
+  const expression = "a == b";
+  const context = { a: new Date("2025-01-01T00:00:00Z"), b: new Date("2025-01-01T00:00:00Z") };
+  const runtime = new Runtime(expression);
+  const result = runtime.evaluate(context);
+  expect(result).toBe(true);
+});
+
+it('should evaluate a < b for timestamps as false when a is after b', () => {
+  const expression = "a < b";
+  const context = { a: new Date("2025-01-03T00:00:00Z"), b: new Date("2025-01-02T00:00:00Z") };
+  const runtime = new Runtime(expression);
+  const result = runtime.evaluate(context);
+  expect(result).toBe(false);
+});
+
+it('should evaluate a != b for timestamps as true when different', () => {
+  const expression = "a != b";
+  const context = { a: new Date("2025-01-01T00:00:00Z"), b: new Date("2025-01-02T00:00:00Z") };
+  const runtime = new Runtime(expression);
+  const result = runtime.evaluate(context);
+  expect(result).toBe(true);
+});
 });
