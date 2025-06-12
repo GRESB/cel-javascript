@@ -215,7 +215,7 @@ Here is a list of supported functions:
 
 ## Timestamp Handling and Relational Operators
 
-**New in v0.0.21:**  
+**New in v0.0.22:**  
 This release enhances the handling of timestamps and relational operators in the CEL evaluation system:
 
 - **Timestamp Comparisons:**  
