@@ -2,6 +2,24 @@ import CELVisitor from './generated/CELVisitor';
 import { builtInFunctions } from './BuiltInFunctions';
 import Context from './Context';
 
+/**
+ * Validates if a string represents a valid timestamp in ISO 8601 format.
+ * Accepts both date-only (YYYY-MM-DD) and full datetime formats.
+ */
+export function isValidTimestampString(str: string): boolean {
+  // Accepts ISO 8601 date or datetime strings
+  const parsed = Date.parse(str);
+  if (isNaN(parsed)) return false;
+  // Check if the parsed date's ISO string starts with the input (date or datetime)
+  const d = new Date(parsed);
+  const iso = d.toISOString();
+  // Accepts date-only (YYYY-MM-DD) or full ISO
+  return (
+    str.length === 10 && iso.startsWith(str) ||
+    iso.startsWith(str)
+  );
+}
+
 export class Evaluator extends CELVisitor<any> {
   private context: Context;
 
@@ -62,32 +80,12 @@ export class Evaluator extends CELVisitor<any> {
   };
 
   private evaluateComparison(operator: string, left: any, right: any): boolean {
-    function isValidTimestampString(str: string): boolean {
-      // Accepts ISO 8601 date or datetime strings
-      const parsed = Date.parse(str);
-      if (isNaN(parsed)) return false;
-      // Check if the parsed date's ISO string starts with the input (date or datetime)
-      const d = new Date(parsed);
-      const iso = d.toISOString();
-      // Accepts date-only (YYYY-MM-DD) or full ISO
-      return (
-        str.length === 10 && iso.startsWith(str) ||
-        iso.startsWith(str)
-      );
-    }
-
+    // Only transform timestamp strings directly to numeric timestamps
     if (typeof left === 'string' && isValidTimestampString(left)) {
-      left = new Date(left);
+      left = new Date(left).getTime();
     }
     if (typeof right === 'string' && isValidTimestampString(right)) {
-      right = new Date(right);
-    }
-
-    if (left instanceof Date) {
-      left = left.getTime();
-    }
-    if (right instanceof Date) {
-      right = right.getTime();
+      right = new Date(right).getTime();
     }
 
     switch (operator) {
