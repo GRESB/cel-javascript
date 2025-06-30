@@ -239,6 +239,22 @@ describe('CEL Evaluation Tests', () => {
         const result = runtime.evaluate(context);
         expect(result).toBe(false);
     });
+        
+    it('should evaluate boolean equality with true result', () => {
+        const expression = "value == true";
+        const runtime = new Runtime(expression);
+        const context = { value: true };
+        const result = runtime.evaluate(context);
+        expect(result).toBe(true);
+    });
+    
+    it('should evaluate boolean equality with false result', () => {
+        const expression = "value == false";
+        const runtime = new Runtime(expression);
+        const context = { value: true };
+        const result = runtime.evaluate(context);
+        expect(result).toBe(false);
+    });
 });
 
 describe('timestamp function with comparison operators', () => {
