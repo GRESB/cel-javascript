@@ -59,7 +59,22 @@ export class Evaluator extends CELVisitor<any> {
     const operator = ctx.getChild(1).getText(); // Get the operator (e.g., '<=')
     const right = this.visit(ctx.getChild(2)); // Evaluate the right operand
 
-    // Delegate the comparison logic to evaluateComparison
+
+    if (operator === '==' || operator === '!=') {
+      if (left instanceof Date && right instanceof Date) {
+        const comparison = left.getTime() === right.getTime();
+        return operator === '==' ? comparison : !comparison;
+      }
+
+      switch (operator) {
+        case '==':
+          return left === right;
+        case '!=':
+          return left !== right;
+      }
+    }
+
+
     return evaluateComparison(operator, left, right);
   };
 

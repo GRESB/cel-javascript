@@ -130,10 +130,6 @@ export function evaluateComparison(operator: string, left: any, right: any): boo
                 return comparison >= 0;
             case '>':
                 return comparison > 0;
-            case '==':
-                return comparison === 0;
-            case '!=':
-                return comparison !== 0;
             default:
                 throw new Error(`Unsupported operator: ${operator}`);
         }
@@ -150,14 +146,10 @@ export function evaluateComparison(operator: string, left: any, right: any): boo
                 return left >= right;
             case '>':
                 return left > right;
-            case '==':
-                return left === right;
-            case '!=':
-                return left !== right;
             default:
                 throw new Error(`Unsupported operator: ${operator}`);
         }
     }
 
-    throw new Error(`Operator '${operator}' requires operands of the same type (numeric or timestamp), but got '${typeof left}' and '${typeof right}'. Supported types: number, Date`);
+    throw new Error(`Relational operator '${operator}' requires operands of the same type (numeric or timestamp), but got '${typeof left}' and '${typeof right}'. Supported types: number, Date`);
 }
