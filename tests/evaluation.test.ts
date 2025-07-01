@@ -215,6 +215,46 @@ describe('CEL Evaluation Tests', () => {
         const runtime = new Runtime(expression);
         expect(() => runtime.evaluate({})).toThrow('Mismatching types: Cannot compare \'int\' and \'float\' with \'<=\'');
     });
+
+    it('should evaluate string equality comparison ', () => {
+        const expression = "value == 'yes'";
+        const runtime = new Runtime(expression);
+        const context = { value: 'yes' };
+        const result = runtime.evaluate(context);
+        expect(result).toBe(true);
+    });
+
+    it('should evaluate string inequality comparison', () => {
+        const expression = "value != 'yes'";
+        const runtime = new Runtime(expression);
+        const context = { value: 'no' };
+        const result = runtime.evaluate(context);
+        expect(result).toBe(true);
+    });
+
+    it('should evaluate string equality with false result', () => {
+        const expression = "value == 'yes'";
+        const runtime = new Runtime(expression);
+        const context = { value: 'no' };
+        const result = runtime.evaluate(context);
+        expect(result).toBe(false);
+    });
+        
+    it('should evaluate boolean equality with true result', () => {
+        const expression = "value == true";
+        const runtime = new Runtime(expression);
+        const context = { value: true };
+        const result = runtime.evaluate(context);
+        expect(result).toBe(true);
+    });
+    
+    it('should evaluate boolean equality with false result', () => {
+        const expression = "value == false";
+        const runtime = new Runtime(expression);
+        const context = { value: true };
+        const result = runtime.evaluate(context);
+        expect(result).toBe(false);
+    });
 });
 
 describe('timestamp function with comparison operators', () => {

@@ -1,7 +1,24 @@
 import CELVisitor from './generated/CELVisitor';
 import { builtInFunctions } from './BuiltInFunctions';
 import Context from './Context';
-import { evaluateComparison } from './Runtime';
+
+/**
+ * Validates if a string represents a valid timestamp in ISO 8601 format.
+ * Accepts both date-only (YYYY-MM-DD) and full datetime formats.
+ */
+export function isValidTimestampString(str: string): boolean {
+  // Accepts ISO 8601 date or datetime strings
+  const parsed = Date.parse(str);
+  if (isNaN(parsed)) return false;
+  // Check if the parsed date's ISO string starts with the input (date or datetime)
+  const d = new Date(parsed);
+  const iso = d.toISOString();
+  // Accepts date-only (YYYY-MM-DD) or full ISO
+  return (
+    str.length === 10 && iso.startsWith(str) ||
+    iso.startsWith(str)
+  );
+}
 
 export class Evaluator extends CELVisitor<any> {
   private context: Context;
@@ -59,9 +76,35 @@ export class Evaluator extends CELVisitor<any> {
     const operator = ctx.getChild(1).getText(); // Get the operator (e.g., '<=')
     const right = this.visit(ctx.getChild(2)); // Evaluate the right operand
 
-    // Delegate the comparison logic to evaluateComparison
-    return evaluateComparison(operator, left, right);
+    return this.evaluateComparison(operator, left, right);
   };
+
+  private evaluateComparison(operator: string, left: any, right: any): boolean {
+    // Only transform timestamp strings directly to numeric timestamps
+    if (typeof left === 'string' && isValidTimestampString(left)) {
+      left = new Date(left).getTime();
+    }
+    if (typeof right === 'string' && isValidTimestampString(right)) {
+      right = new Date(right).getTime();
+    }
+
+    switch (operator) {
+      case '==':
+        return left === right;
+      case '!=':
+        return left !== right;
+      case '<=':
+        return left <= right;
+      case '<':
+        return left < right;
+      case '>=':
+        return left >= right;
+      case '>':
+        return left > right;
+      default:
+        throw new Error(`Unsupported operator: ${operator}`);
+    }
+  }
 
   visitRelationCalc = (ctx: any) => {
     return this.visit(ctx.getChild(0));

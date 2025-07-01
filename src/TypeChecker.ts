@@ -320,15 +320,16 @@ class TypeChecker extends CELVisitor<any> {
             if (normalizedLeftType !== normalizedRightType) {
                 throw new Error(`Mismatching types: Cannot compare '${normalizedLeftType}' and '${normalizedRightType}' with '${operator}'`);
             }
-            // Allow int, float, or timestamp for relational operators
+            // Allow int, float, string, or timestamp for relational operators
             if (
                 !(
                     normalizedLeftType === 'int' ||
                     normalizedLeftType === 'float' ||
+                    normalizedLeftType === 'string' ||
                     normalizedLeftType === 'timestamp'
                 )
             ) {
-                throw new Error(`Operator '${operator}' requires numeric or timestamp operands, but got '${normalizedLeftType}' and '${normalizedRightType}'`);
+                throw new Error(`Operator '${operator}' requires numeric, string, or timestamp operands, but got '${normalizedLeftType}' and '${normalizedRightType}'`);
             }
         } else if (operator === 'in') {
         } else {
@@ -346,9 +347,6 @@ class TypeChecker extends CELVisitor<any> {
         }
         return types;
     };
-
-
-
 }
 
 const getType = (value: any): string => {
