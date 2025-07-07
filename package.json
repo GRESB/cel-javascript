@@ -1,10 +1,8 @@
 {
   "name": "@gresb/cel-javascript",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Parser and evaluator for Google's Common Expression Language (CEL) in JavaScript using ANTLR4",
-  "main": "lib/index.js",
-  "exports": "./lib/index.js",
-  "types": "lib/index.d.ts",
+  "main": "src/index.ts",
   "type": "module",
   "scripts": {
     "build": "tsc",
